@@ -1,0 +1,7 @@
+/* Deprecated: duplicate global stylesheet.
+   The application uses `app/globals.css` (imported from `app/layout.tsx`).
+   This `styles/globals.css` file is kept only for reference to avoid
+   accidental deletion. You can remove it manually if you prefer.
+*/
+
+/* NOTE: No runtime code imports this file. */
