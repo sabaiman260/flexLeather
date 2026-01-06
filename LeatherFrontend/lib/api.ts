@@ -1,0 +1,133 @@
+const envBase =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "http://localhost:4000";
+
+export const API_BASE_URL = envBase.replace(/\/+$/, "");
+
+let isRefreshing = false
+let refreshQueue: (() => void)[] = []
+
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  const getLocalToken = () => typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
+
+  let token = getLocalToken()
+  const isFormData = typeof (options as any).body !== 'undefined' && (options as any).body instanceof FormData
+  const headers = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  }
+
+  const url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+
+  let res: Response
+  try {
+    // Optional timeout to fail fast on unreachable backend
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+    res = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers,
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+  } catch (err: any) {
+    const error: any = new Error('Failed to fetch')
+    error.cause = err
+    error.status = 0
+    throw error
+  }
+
+  // Handle 401 Unauthorized - Token Refresh
+  if (res.status === 401 && typeof window !== 'undefined' && !path.includes('/auth/refresh-token')) {
+    // Queue requests while refreshing
+    await new Promise<void>((resolve) => {
+      refreshQueue.push(resolve)
+
+      if (!isRefreshing) {
+        isRefreshing = true
+
+        fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
+          method: 'POST',
+          credentials: 'include',
+        })
+          .then(async (refreshRes) => {
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json()
+              const newAccessToken = refreshData?.data?.accessToken
+              if (newAccessToken) {
+                localStorage.setItem('accessToken', newAccessToken)
+              } else {
+                localStorage.removeItem('accessToken')
+              }
+            } else {
+              localStorage.removeItem('accessToken')
+            }
+          })
+          .catch(() => {
+            localStorage.removeItem('accessToken')
+          })
+          .finally(() => {
+            isRefreshing = false
+            refreshQueue.forEach((cb) => cb())
+            refreshQueue = []
+          })
+      }
+    })
+
+    // Retry original request with new token
+    token = getLocalToken()
+    const newHeaders = {
+      ...headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+    res = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: newHeaders,
+    })
+  }
+
+  let body: any = null
+  try {
+    body = await res.json()
+  } catch {}
+
+  if (!res.ok) {
+    const error: any = new Error(
+      body?.message ||
+        body?.error ||
+        (res.status === 401
+          ? 'Unauthorized'
+          : res.status === 403
+          ? 'Forbidden'
+          : 'Something went wrong')
+    )
+    error.status = res.status
+    error.url = url
+    // Attach backend error payload for better debugging in the frontend
+    error.details = body?.errors || body?.data?.errors || null
+    error.body = body || null
+    throw error
+  }
+
+  return body
+}
+
+export type BackendProduct = {
+  _id: string;
+  name: string;
+  description?: string;
+  price: number;
+  discount?: number;
+  stock?: number;
+  sizes?: string[];
+  colors?: string[];
+  specs?: string[];
+  category?: { _id: string; name?: string; type?: string; slug?: string } | string;
+  imageUrls?: string[];
+  // `images` may contain raw keys or URLs depending on the endpoint — include for admin UI
+  images?: string[];
+};
