@@ -86,15 +86,13 @@ export default function ProfilePage() {
                 <label className="block text-sm mb-2">Email</label>
                 <input name="userEmail" value={form.userEmail} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm mb-2">Phone</label>
-                  <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm mb-2">Address</label>
-                  <textarea name="userAddress" value={form.userAddress} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
-                </div>
+              <div>
+                <label className="block text-sm mb-2">Phone</label>
+                <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm mb-2">Address</label>
+                <textarea name="userAddress" value={form.userAddress} onChange={onChange} placeholder="Enter your address" className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md min-h-24" />
               </div>
               <div className="pt-2 flex gap-3">
                 <Button onClick={onSave} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>

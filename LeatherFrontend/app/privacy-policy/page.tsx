@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <p className="text-sm opacity-80">We follow industry standards to keep your data secure. We never sell your personal information. We may share necessary data with trusted partners (shipping carriers, payment gateways) only for order fulfillment.</p>
           </section>
 
-          <p className="text-sm opacity-80">For any questions about privacy or data removal, contact us at <a className="underline" href="mailto:info@flexleather.com">info@flexleather.com</a>.</p>
+          <p className="text-sm opacity-80">For any questions about privacy or data removal, contact us at <a className="underline" href="mailto:info@flexleather.com">flexleather.official@gmail.com</a>.</p>
         </div>
       </main>
       <Footer />

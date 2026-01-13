@@ -40,40 +40,20 @@ export const createEasyPaisaPayment = async (order, amount, mobileNumber) => {
     // const signature = generateEasyPaisaSignature(payload, hashKey);
     // payload.signature = signature;
 
-    try {
-        // Simulate API Call
-        // const response = await fetch(apiUrl, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(payload)
-        // });
-        // const result = await response.json();
+    // The API-based EasyPaisa integration is currently turned off.
+    // Provide manual instructions to the frontend instead. To restore the real
+    // API flow, uncomment the fetch block above and return the real API response.
+    const manualNumber = process.env.EASYPAISA_MANUAL_NUMBER || process.env.EASYPAISA_STORE_ID || '';
 
-        // Mock Success Response
-        const result = {
-            responseCode: "0000",
-            responseMessage: "Payment initiated. Please approve in EasyPaisa App."
-        };
-
-        if (result.responseCode === "0000") {
-             return { 
-                type: 'api', 
-                message: result.responseMessage,
-                transactionId: transactionId 
-            };
-        } else {
-            throw new ApiError(400, "EasyPaisa initiation failed: " + result.responseMessage);
+    return {
+        type: 'manual',
+        provider: 'easypaisa',
+        instructions: {
+            title: 'Pay with EasyPaisa (Manual)',
+            details: manualNumber ? `Send payment to EasyPaisa Store ID / Mobile: ${manualNumber}` : 'Send payment to the EasyPaisa merchant account configured by the store owner. Contact support for details.',
+            note: 'After sending payment, please enter your transaction / reference ID below to confirm.'
         }
-
-    } catch (error) {
-        console.error("EasyPaisa API Error", error);
-        // Fallback for demo purposes if API fails or is not reachable
-        return { 
-            type: 'api', 
-            message: 'Payment request sent to mobile number. Please approve in EasyPaisa App.',
-            transactionId: transactionId 
-        };
-    }
+    };
 };
 
 /**

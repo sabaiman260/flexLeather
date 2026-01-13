@@ -37,11 +37,12 @@ export default function Header() {
       <header
         className="
           hidden md:block
-          fixed top-0 w-full z-50
-          bg-header-leather
+          fixed top-0 left-0 w-full z-50
+          bg-[#3B2A1A]
           bg-opacity-100
+          backdrop-blur-none
           isolate
-          shadow-sm
+          shadow-md
         "
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -117,6 +118,19 @@ export default function Header() {
               )}
             </Link>
 
+            {/* Signup/Register Icon (only if not logged in) */}
+            {!isLoggedIn && !isLoading && (
+              <Link
+                href="/register"
+                className="p-2 hover:bg-white/10 rounded-full transition"
+                title="Sign Up"
+              >
+                <svg className="w-5 h-5 text-[#E6D8C8]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+              </Link>
+            )}
+
             {/* Avatar / Login */}
             {isLoading ? null : isLoggedIn ? (
               <DropdownMenu>
@@ -125,10 +139,7 @@ export default function Header() {
                     <AvatarImage src={user?.profileImage} alt={user?.userName} />
                     <AvatarFallback
                       className="font-semibold"
-                      style={{
-                        backgroundColor: '#E6D8C8',
-                        color: '#3B2A1A',
-                      }}
+                      style={{ backgroundColor: '#E6D8C8', color: '#3B2A1A' }}
                     >
                       {user?.userName?.substring(0, 2).toUpperCase() || 'U'}
                     </AvatarFallback>
@@ -186,8 +197,9 @@ export default function Header() {
           </nav>
         </div>
       </header>
-      {/* ================= SPACER ================= */}
-      <div className="h-[72px] md:h-[88px]" />
+
+      {/* Spacer so content starts below fixed header (match header height) */}
+      <div className="hidden md:block h-[88px]" />
     </>
   )
 }

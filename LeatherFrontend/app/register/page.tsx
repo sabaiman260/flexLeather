@@ -65,12 +65,19 @@ export default function RegisterPage() {
       alert('Registered! Check your email to verify.')
       window.location.href = '/login'
     } catch (err: any) {
+      // Log full error for debugging (includes backend validation details)
+      console.error('Register error:', err)
+      console.error('Error details:', err?.details || err?.body)
       setError(err?.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
   }
 
+  // ================= GOOGLE OAUTH FUNCTIONS DISABLED (COMMENTED OUT) =================
+  // Google script loading and login initialization are disabled to prevent FedCM errors.
+  // To re-enable Google OAuth in the future, uncomment this entire section.
+  /*
   const ensureGoogleScript = () =>
     new Promise<void>((resolve, reject) => {
       if (googleLoaded.current || (window as any).google?.accounts?.id) {
@@ -136,6 +143,8 @@ export default function RegisterPage() {
       setError(err?.message || 'Google login failed')
     }
   }
+  */
+  // ================= END GOOGLE OAUTH FUNCTIONS DISABLED =================
 
   return (
     <>
@@ -261,11 +270,13 @@ export default function RegisterPage() {
               </Button>
             </form>
 
+            {/* ================= GOOGLE LOGIN BUTTON (COMMENTED OUT) =================
             <div className="mt-4">
               <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin}>
                 Continue with Google
               </Button>
             </div>
+            ================= END GOOGLE LOGIN BUTTON ================= */}
 
             <div className="text-center text-sm mt-6">
               <p className="opacity-60">

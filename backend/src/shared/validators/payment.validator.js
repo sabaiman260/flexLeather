@@ -6,9 +6,15 @@ const createPaymentSchema = z.object({
     mobileNumber: z.string().optional() // Optional, will be read from order if missing
 });
 
+const submitManualPaymentSchema = z.object({
+    orderId: z.string().min(1, 'Order ID is required'),
+    method: z.enum(["jazzcash", "easypaisa", "payfast"]),
+    transactionId: z.string().min(1, 'Transaction / Reference ID is required')
+});
+
 const updatePaymentStatusSchema = z.object({
     status: z.enum(["pending", "success", "failed"]),
     transactionId: z.string().optional()
 });
 
-export { createPaymentSchema, updatePaymentStatusSchema };
+export { createPaymentSchema, updatePaymentStatusSchema, submitManualPaymentSchema };
