@@ -96,15 +96,18 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   } catch {}
 
   if (!res.ok) {
-    const error: any = new Error(
-      body?.message ||
-        body?.error ||
-        (res.status === 401
-          ? 'Unauthorized'
-          : res.status === 403
-          ? 'Forbidden'
-          : 'Something went wrong')
-    )
+    // Build a more informative error message when backend provides validation errors
+    let message = body?.message || body?.error || (res.status === 401 ? 'Unauthorized' : res.status === 403 ? 'Forbidden' : 'Something went wrong')
+    if (body?.errors && Array.isArray(body.errors) && body.errors.length) {
+      try {
+        const details = body.errors.map((e: any) => (e.field ? `${e.field}: ${e.message}` : e.message)).join('; ')
+        message = `${message} - ${details}`
+      } catch {
+        // ignore and keep original message
+      }
+    }
+
+    const error: any = new Error(message)
     error.status = res.status
     error.url = url
     // Attach backend error payload for better debugging in the frontend

@@ -31,30 +31,21 @@ const generatePayFastSignature = (data, passphrase) => {
  * @returns {Object} { type: 'redirect', url, data }
  */
 export const createPayFastPayment = async (order, amount) => {
-    const merchantId = process.env.PAYFAST_MERCHANT_ID;
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
-    const passphrase = process.env.PAYFAST_PASSPHRASE;
-    const isSandbox = process.env.PAYFAST_ENV === 'sandbox';
+    // PayFast API-based integration is disabled for now. Return manual instructions
+    // so the frontend can show merchant details and ask the customer to provide
+    // a transaction/reference ID. To re-enable PayFast redirect flow, restore
+    // the original payload generation and return the redirect (type: 'redirect').
+    const manualInfo = process.env.PAYFAST_MERCHANT_ID || '';
 
-    const data = {
-        merchant_id: merchantId,
-        merchant_key: merchantKey,
-        return_url: `${process.env.CLIENT_URL}/checkout/success?orderId=${order._id}`,
-        cancel_url: `${process.env.CLIENT_URL}/checkout/cancel?orderId=${order._id}`,
-        notify_url: `${process.env.BASE_URL}/api/v1/payments/webhook/payfast`,
-        name_first: "FlexLeather", // Could be dynamic based on user/guest
-        email_address: "noreply@flexleather.com", // Could be dynamic
-        m_payment_id: order._id.toString(),
-        amount: amount.toFixed(2),
-        item_name: `Order #${order._id}`
+    return {
+        type: 'manual',
+        provider: 'payfast',
+        instructions: {
+            title: 'Pay with PayFast (Manual)',
+            details: manualInfo ? `Use PayFast Merchant: ${manualInfo} — follow your PayFast dashboard instructions.` : 'Please contact support for PayFast payment details.',
+            note: 'After sending payment via PayFast, enter your PayFast transaction/reference ID below to confirm.'
+        }
     };
-
-    const signature = generatePayFastSignature(data, passphrase);
-    data.signature = signature;
-
-    const url = isSandbox ? "https://sandbox.payfast.co.za/eng/process" : "https://www.payfast.co.za/eng/process";
-
-    return { type: 'redirect', url, data };
 };
 
 /**

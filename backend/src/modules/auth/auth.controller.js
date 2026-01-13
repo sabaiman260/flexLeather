@@ -240,7 +240,8 @@ const forgotPasswordMail = asyncHandler(async (req, res) => {
 
     await user.save();
 
-    const resetLink = `${process.env.BASE_URL}/api/v1/auth/reset-password/${unHashedToken}`;
+    // Link should point to the frontend reset page so user sees the form
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${unHashedToken}`;
 
     await mailTransporter.sendMail({
         from: process.env.MAILTRAP_SENDEREMAIL,

@@ -3,9 +3,12 @@ import Payment from "../../models/Payment.model.js";
 import Order from "../../models/Order.model.js";
 import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
-import { createPayFastPayment, handlePayFastWebhook } from "./services/payfast.service.js";
-import { createJazzCashPayment, handleJazzCashWebhook } from "./services/jazzcash.service.js";
-import { createEasyPaisaPayment, handleEasyPaisaWebhook } from "./services/easypaisa.service.js";
+// NOTE: API-based gateway integrations are currently disabled in services.
+// The service modules still export helper functions but createPayment will
+// use a manual flow for JazzCash / EasyPaisa and disable PayFast redirect.
+import { handlePayFastWebhook } from "./services/payfast.service.js";
+import { handleJazzCashWebhook } from "./services/jazzcash.service.js";
+import { handleEasyPaisaWebhook } from "./services/easypaisa.service.js";
 
 //-------------------- CREATE PAYMENT --------------------//
 const createPayment = asyncHandler(async (req, res) => {
@@ -35,36 +38,59 @@ const createPayment = asyncHandler(async (req, res) => {
         status: "pending"
     });
 
-    let paymentResponse;
-
-    try {
-        switch (method) {
-            case "cod":
-                order.paymentStatus = "pending";
-                await order.save();
-                paymentResponse = { type: 'cod', message: 'Order placed with Cash on Delivery' };
-                break;
-            case "payfast":
-                paymentResponse = await createPayFastPayment(order, amount);
-                break;
-            case "jazzcash":
-                paymentResponse = await createJazzCashPayment(order, amount);
-                break;
-            case "easypaisa":
-                if (!mobileNumber) throw new ApiError(400, "Mobile number required for EasyPaisa (from Order details)");
-                paymentResponse = await createEasyPaisaPayment(order, amount, mobileNumber);
-                break;
-            default:
-                throw new ApiError(400, "Invalid payment method");
-        }
-    } catch (error) {
-        // If initiation fails, we should probably mark payment as failed
-        payment.status = "failed";
-        await payment.save();
-        throw error;
+    // Manual handling for non-COD methods: return instructions to frontend
+    if (method === 'cod') {
+        order.paymentStatus = 'pending';
+        await order.save();
+        return res.status(201).json(new ApiResponse(201, { payment, type: 'cod', message: 'Order placed with Cash on Delivery' }, 'Payment recorded'));
     }
 
-    return res.status(201).json(new ApiResponse(201, { payment, ...paymentResponse }, "Payment initiated successfully"));
+    if (method === 'payfast') {
+        // PayFast API integration is disabled. Return manual instructions from the service.
+        const manual = await import('./services/payfast.service.js').then(m => m.createPayFastPayment(order, amount));
+        order.paymentStatus = 'pending';
+        await order.save();
+        return res.status(201).json(new ApiResponse(201, { payment, ...manual }, 'Manual payment instructions returned'));
+    }
+
+    if (method === 'jazzcash' || method === 'easypaisa') {
+        // Return manual instructions (services currently return manual instruction objects)
+        const service = method === 'jazzcash' ? './services/jazzcash.service.js' : './services/easypaisa.service.js';
+        const manual = await import(service).then(m => m.createJazzCashPayment ? m.createJazzCashPayment(order, amount) : m.createEasyPaisaPayment(order, amount, mobileNumber));
+        order.paymentStatus = 'pending';
+        await order.save();
+        return res.status(201).json(new ApiResponse(201, { payment, ...manual }, 'Manual payment instructions returned'));
+    }
+
+    throw new ApiError(400, 'Invalid payment method');
+});
+
+// ----------------- SUBMIT MANUAL TRANSACTION ID (USER) -----------------
+const submitManualPayment = asyncHandler(async (req, res) => {
+    const { orderId, method, transactionId } = req.body;
+
+    if (!orderId || !method) throw new ApiError(400, 'orderId and method required');
+    if (!transactionId) throw new ApiError(400, 'transactionId is required to submit manual payment');
+
+    const order = await Order.findById(orderId);
+    if (!order) throw new ApiError(404, 'Order not found');
+
+    const amount = order.finalAmount || order.totalAmount;
+
+    const payment = await Payment.create({
+        order: orderId,
+        method,
+        amount,
+        status: 'pending',
+        transactionId
+    });
+
+    // Keep the order in pending state until admin verifies
+    order.paymentStatus = 'pending';
+    order.orderStatus = 'pending';
+    await order.save();
+
+    return res.status(201).json(new ApiResponse(201, payment, 'Manual payment submitted. Awaiting verification by admin.'));
 });
 
 //-------------------- GATEWAY WEBHOOK MAIN --------------------//
@@ -191,4 +217,29 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, payment, "Payment status updated successfully"));
 });
 
-export { createPayment, updatePaymentStatus, getPayment, gatewayWebhook };
+// -------------------- GET PAYMENT INSTRUCTIONS --------------------//
+const getPaymentInstructions = asyncHandler(async (req, res) => {
+    const jazz = process.env.JAZZCASH_MANUAL_NUMBER || process.env.JAZZCASH_MERCHANT_ID || '';
+    const easy = process.env.EASYPAISA_MANUAL_NUMBER || process.env.EASYPAISA_STORE_ID || '';
+    const payfast = process.env.PAYFAST_MERCHANT_ID || '';
+
+    return res.status(200).json(new ApiResponse(200, {
+        jazzcash: {
+            provider: 'jazzcash',
+            account: jazz,
+            instructions: jazz ? `Send payment to: ${jazz}` : 'Contact support for JazzCash details.'
+        },
+        easypaisa: {
+            provider: 'easypaisa',
+            account: easy,
+            instructions: easy ? `Send payment to: ${easy}` : 'Contact support for EasyPaisa details.'
+        },
+        payfast: {
+            provider: 'payfast',
+            account: payfast,
+            instructions: payfast ? `Use PayFast Merchant: ${payfast}` : 'Contact support for PayFast details.'
+        }
+    }, 'Manual payment instructions'));
+});
+
+export { createPayment, updatePaymentStatus, getPayment, gatewayWebhook, submitManualPayment, getPaymentInstructions };

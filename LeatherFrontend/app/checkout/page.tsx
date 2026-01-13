@@ -25,6 +25,7 @@ export default function CheckoutPage() {
   type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa' | 'payfast'
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
+  const [transactionId, setTransactionId] = useState('')
   const [coupon, setCoupon] = useState('')
   const [discount, setDiscount] = useState(0)
   const SHIPPING_COST = 200
@@ -74,6 +75,12 @@ export default function CheckoutPage() {
       return
     }
 
+    // For JazzCash and EasyPaisa, transaction ID is mandatory
+    if ((paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && !transactionId.trim()) {
+      alert('Please enter the Transaction/Reference ID from your payment confirmation')
+      return
+    }
+
     const guestDetails = { fullName: name, email, phone, address: `${address}, ${city}, ${zip}` }
     const orderItems = items.map(i => ({ 
       productId: i.id, 
@@ -92,16 +99,26 @@ export default function CheckoutPage() {
       const order = res?.data
       let paymentRes;
 
-      if (paymentMethod !== 'cod') {
-        const payRes = await apiFetch('/api/v1/payments', {
-          method: 'POST',
-          body: JSON.stringify({ orderId: order?._id, method: paymentMethod, amount: finalTotal })
-        })
-        paymentRes = payRes?.data
-      } else {
-         // COD
-         paymentRes = { type: 'cod' }
-      }
+        if (paymentMethod !== 'cod') {
+          // If user provided a transaction ID for manual payment, submit it immediately
+          if ((paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && transactionId.trim()) {
+            const manualRes = await apiFetch('/api/v1/payments/manual', {
+              method: 'POST',
+              body: JSON.stringify({ orderId: order?._id, method: paymentMethod, transactionId: transactionId.trim() })
+            })
+            paymentRes = manualRes?.data
+          } else {
+            // Initiate payment (will return manual instructions for JazzCash/EasyPaisa)
+            const payRes = await apiFetch('/api/v1/payments', {
+              method: 'POST',
+              body: JSON.stringify({ orderId: order?._id, method: paymentMethod, amount: finalTotal })
+            })
+            paymentRes = payRes?.data
+          }
+        } else {
+           // COD
+           paymentRes = { type: 'cod' }
+        }
 
       localStorage.setItem('flexleather_order', JSON.stringify({
         id: order?._id || `AL-${Date.now()}`,
@@ -115,7 +132,7 @@ export default function CheckoutPage() {
       clearCart()
 
       // Handle Payment Redirection Logic
-      if (paymentRes?.type === 'redirect' && paymentRes.url && paymentRes.data) {
+        if (paymentRes?.type === 'redirect' && paymentRes.url && paymentRes.data) {
           // Dynamic Form Submission
           const form = document.createElement('form');
           form.method = 'POST';
@@ -133,8 +150,18 @@ export default function CheckoutPage() {
           document.body.appendChild(form);
           form.submit();
       } else if (paymentRes?.type === 'api') {
-          // Show instructions (EasyPaisa)
+          // Show instructions (legacy API flow)
           alert(`Payment Initiated! ${paymentRes.message}\nTransaction ID: ${paymentRes.transactionId}`);
+          router.push('/order-confirmation');
+      } else if (paymentRes?.type === 'manual') {
+          // Manual payment instruction returned (JazzCash / EasyPaisa / PayFast)
+          const instr = paymentRes.instructions || paymentRes.message || '';
+          if (typeof instr === 'object' && instr.details) {
+            alert(`${instr.title || 'Manual Payment'}\n\n${instr.details}\n\n${instr.note || ''}`);
+          } else {
+            alert(`Manual Payment: ${instr}`);
+          }
+          // Keep consistent user flow: clear cart and go to confirmation page.
           router.push('/order-confirmation');
       } else {
           // COD or Success
@@ -188,14 +215,43 @@ export default function CheckoutPage() {
                 <h2 className="text-lg font-light tracking-wide mb-6">Payment Method</h2>
                 <div className="border border-accent p-6 mb-4">
                   <fieldset className="space-y-2">
-                    {(['cod', 'jazzcash', 'easypaisa', 'payfast'] as PaymentMethod[]).map(method => (
+                    {(['cod', 'jazzcash', 'easypaisa'] as PaymentMethod[]).map(method => (
                       <label key={method} className="flex items-center gap-3">
                         <input type="radio" name="payment" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />
-                        <span>{method === 'payfast' ? 'PayFast (Card/Bank)' : method.toUpperCase()}</span>
+                        <span>{method.toUpperCase()}</span>
                       </label>
                     ))}
                   </fieldset>
                 </div>
+
+                {/* Display payment instructions for JazzCash and EasyPaisa */}
+                {paymentMethod === 'jazzcash' && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-sm font-light"><strong>JazzCash Contact:</strong> Ehsan Ali</p>
+                    <p className="text-sm font-light"><strong>Send payment to:</strong> 0300-3395535</p>
+                  </div>
+                )}
+                {paymentMethod === 'easypaisa' && (
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm font-light"><strong>EasyPaisa Contact:</strong> Ehsan Ali</p>
+                    <p className="text-sm font-light"><strong>Send payment to:</strong> 0300-3395535</p>
+                  </div>
+                )}
+
+                {/* Manual payment transaction input */}
+                {(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-light mb-2">Transaction / Reference ID (optional)</label>
+                    <input
+                      type="text"
+                      value={transactionId}
+                      onChange={e => setTransactionId(e.target.value)}
+                      placeholder="Enter transaction or reference ID after payment"
+                      className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition"
+                    />
+                    <p className="text-xs opacity-70 mt-2">If you already completed payment via your mobile app, enter the transaction/reference ID here to speed verification.</p>
+                  </div>
+                )}
               </div>
             </div>
 

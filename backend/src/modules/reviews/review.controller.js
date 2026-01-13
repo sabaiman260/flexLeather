@@ -1,6 +1,7 @@
 import { asyncHandler } from "../../core/utils/async-handler.js";
 import Review from "../../models/Review.model.js";
 import Product from "../../models/Product.model.js";
+import Order from "../../models/Order.model.js";
 import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
@@ -12,6 +13,17 @@ const createReview = asyncHandler(async (req, res) => {
 
     const productExists = await Product.findById(product);
     if (!productExists) throw new ApiError(404, "Product not found");
+
+    // ✅ Validate: User must have at least one paid & delivered order before reviewing
+    const eligibleOrder = await Order.findOne({
+        buyer: user,
+        orderStatus: 'delivered',
+        paymentStatus: 'paid'
+    });
+    
+    if (!eligibleOrder) {
+        throw new ApiError(403, "You can only submit reviews for products from paid and delivered orders");
+    }
 
     let images = [];
     if (req.files) {

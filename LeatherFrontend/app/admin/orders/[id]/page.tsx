@@ -104,6 +104,7 @@ function OrderDetailsContent() {
   if (!order) return <div className="p-8">Order not found</div>
 
   const customerName = order.buyer?.userName || order.guestDetails?.fullName || 'Guest'
+  // Safely extract email from buyer or guest details, showing actual email instead of N/A
   const customerEmail = order.buyer?.userEmail || order.guestDetails?.email || 'N/A'
   const customerPhone = order.buyer?.phoneNumber || order.guestDetails?.phone || 'N/A'
   

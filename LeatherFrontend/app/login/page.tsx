@@ -16,76 +16,191 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [googleReady, setGoogleReady] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
-  const googleLoaded = useRef(false)
+  const googleLoadedRef = useRef(false)
+  const googleInitializedRef = useRef(false)
+  const promptShownRef = useRef(false)
 
-  const handleGoogleLogin = async () => {
-    let clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
-    if (!clientId) {
-      try {
-        const res = await apiFetch('/api/v1/auth/google-client-id')
-        clientId = res?.data?.clientId || ''
-      } catch {}
-    }
-    if (!clientId) {
-      setError('Google login is not configured')
-      return
-    }
-    const ensureScript = () =>
-      new Promise<void>((resolve, reject) => {
-        if (googleLoaded.current || (window as any).google?.accounts?.id) {
-          googleLoaded.current = true
-          resolve()
+  // ================= GOOGLE OAUTH DISABLED (COMMENTED OUT) =================
+  // Google auto-initialization and script loading are disabled to prevent FedCM errors.
+  // To re-enable Google OAuth in the future, uncomment this entire useEffect block.
+  /*
+  // Initialize Google OAuth once on mount
+  useEffect(() => {
+    const initializeGoogle = async () => {
+      if (googleInitializedRef.current) return
+
+      let clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+      if (!clientId) {
+        try {
+          const res = await apiFetch('/api/v1/auth/google-client-id')
+          clientId = res?.data?.clientId || ''
+        } catch (e) {
+          console.error('[Google] Failed to fetch client ID:', e)
           return
         }
+      }
+
+      if (!clientId) {
+        console.error('[Google] Client ID not available')
+        return
+      }
+
+      // Load Google script if not already loaded
+      if (!googleLoadedRef.current) {
         const script = document.createElement('script')
         script.src = 'https://accounts.google.com/gsi/client'
         script.async = true
         script.defer = true
         script.onload = () => {
-          googleLoaded.current = true
-          resolve()
+          googleLoadedRef.current = true
+          setupGoogleAuth(clientId)
         }
-        script.onerror = () => reject(new Error('Failed to load Google script'))
+        script.onerror = () => {
+          console.error('[Google] Failed to load GSI script')
+          setGoogleReady(true) // Still show button as fallback
+        }
         document.head.appendChild(script)
-      })
+      } else {
+        setupGoogleAuth(clientId)
+      }
+    }
+
+    const setupGoogleAuth = (clientId: string) => {
+      try {
+        const google = (window as any).google
+        if (!google?.accounts?.id) {
+          console.warn('[Google] GSI not available yet')
+          setTimeout(() => setupGoogleAuth(clientId), 500)
+          return
+        }
+
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCallback,
+          error_callback: () => {
+            console.warn('[Google] FedCM error - showing fallback button')
+            setGoogleReady(true)
+          },
+          itp_support: false, // Disable ITP workaround to reduce concurrent requests
+        })
+
+        googleInitializedRef.current = true
+        setGoogleReady(true)
+
+        // Show One-Tap only once, with safer checks to reduce FedCM AbortError logs
+        if (!promptShownRef.current) {
+          promptShownRef.current = true
+
+          // Delay prompt slightly to avoid racing other credential requests and ensure
+          // page is visible. Also avoid one-tap on very small screens where it tends
+          // to be unreliable.
+          const tryPrompt = () => {
+            if (document.visibilityState !== 'visible' || window.innerWidth < 720) {
+              // make fallback button available instead of prompting
+              setGoogleReady(true)
+              return
+            }
+
+            try {
+              google.accounts.id.prompt((notification: any) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                  console.log('[Google] One-Tap unavailable, falling back to button')
+                  setGoogleReady(true)
+                }
+              })
+            } catch (e) {
+              console.warn('[Google] Prompt error (non-critical):', e)
+              setGoogleReady(true)
+            }
+          }
+
+          // Wait a bit longer to reduce chance of concurrent calls (800ms)
+          setTimeout(tryPrompt, 800)
+        }
+      } catch (err) {
+        console.error('[Google] Setup error:', err)
+        setGoogleReady(true)
+      }
+    }
+
+    initializeGoogle()
+  }, [])
+  */
+  // ================= END GOOGLE OAUTH DISABLED =================
+
+  // ================= GOOGLE OAUTH HELPERS DISABLED (COMMENTED OUT) =================
+  // These handler functions are disabled. To re-enable, uncomment below.
+  /*
+  const handleGoogleCallback = async (response: any) => {
+    if (!response.credential) {
+      setError('Google authentication failed')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
 
     try {
-      await ensureScript()
-      const google = (window as any).google
-      if (!google?.accounts?.id) throw new Error('Google Identity not available')
-
-      let handled = false
-      google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response: any) => {
-          if (handled) return
-          handled = true
-          try {
-            const res = await apiFetch('/api/v1/auth/google-login', {
-              method: 'POST',
-              body: JSON.stringify({ idToken: response.credential }),
-            })
-            const accessToken = res?.data?.tokens?.accessToken
-            const user = res?.data?.user
-            if (accessToken && user) {
-              login(accessToken, user)
-              if (user.userRole === 'admin') router.push('/admin')
-              else router.push('/')
-            } else {
-              throw new Error('Google login failed')
-            }
-          } catch (err: any) {
-            setError(err?.message || 'Google login failed')
-          }
-        },
+      const res = await apiFetch('/api/v1/auth/google-login', {
+        method: 'POST',
+        body: JSON.stringify({ idToken: response.credential }),
       })
-      google.accounts.id.prompt()
+
+      const accessToken = res?.data?.tokens?.accessToken
+      const user = res?.data?.user
+
+      if (accessToken && user) {
+        login(accessToken, user)
+        if (user.userRole === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/')
+        }
+      } else {
+        setError('Google login failed - no tokens returned')
+      }
     } catch (err: any) {
+      console.error('[Google] Login error:', err)
       setError(err?.message || 'Google login failed')
+    } finally {
+      setLoading(false)
     }
   }
+
+  const handleRenderGoogleButton = () => {
+    try {
+      const google = (window as any).google
+      if (!google?.accounts?.id) {
+        setError('Google Sign-In not available')
+        return
+      }
+
+      const container = document.getElementById('google-signin-button')
+      if (!container) return
+
+      google.accounts.id.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        width: '100%',
+        locale: 'en',
+      })
+    } catch (err) {
+      console.error('[Google] Button render error:', err)
+      setError('Failed to render Google button')
+    }
+  }
+
+  // Render Google button when ready
+  useEffect(() => {
+    if (googleReady) {
+      handleRenderGoogleButton()
+    }
+  }, [googleReady])
+  */
+  // ================= END GOOGLE OAUTH HELPERS DISABLED =================
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,11 +281,15 @@ export default function LoginPage() {
               </Button>
             </form>
 
+            {/* ================= GOOGLE LOGIN BUTTON (COMMENTED OUT) =================
             <div className="mt-4">
-              <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin}>
-                Continue with Google
-              </Button>
+              {googleReady ? (
+                <div id="google-signin-button" className="w-full flex justify-center"></div>
+              ) : (
+                <div className="w-full h-10 bg-muted rounded animate-pulse"></div>
+              )}
             </div>
+            ================= END GOOGLE LOGIN BUTTON ================= */}
 
             <div className="text-center text-sm mt-6">
               <p className="opacity-60">
@@ -182,7 +301,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-6 text-center">
-              <Link href="#" className="text-sm text-accent hover:opacity-75">
+              <Link href="/forgot-password" className="text-sm text-accent hover:opacity-75">
                 Forgot Password?
               </Link>
             </div>
