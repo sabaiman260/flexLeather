@@ -46,7 +46,7 @@ export default function ProductSlider3D() {
 
   return (
     <div className="w-full py-16 bg-white flex justify-center">
-      <div className="relative w-[300px] h-[300px] perspective">
+      <div className="relative w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] md:w-[300px] md:h-[300px] perspective">
         <div className="slider3d animate-rotate3D">
           {images.map((img, i) => (
             <div key={i} className="slide">

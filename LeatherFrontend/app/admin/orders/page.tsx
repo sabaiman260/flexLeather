@@ -16,10 +16,12 @@ type OrderItem = {
 type Order = {
   _id: string
   buyer?: { userName?: string; userEmail?: string }
-  guestDetails?: { fullName?: string }
+  guestDetails?: { fullName?: string; email?: string }
   items: OrderItem[]
   totalAmount: number
-  paymentMethod: 'cod' | 'jazzcash' | 'easypaisa' | 'card'
+  finalAmount?: number
+  shippingCost?: number
+  paymentMethod: 'cod' | 'jazzcash' | 'easypaisa' | 'card' | 'payfast'
   paymentStatus: 'pending' | 'paid' | 'failed'
   orderStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
   createdAt: string
@@ -142,11 +144,16 @@ function OrdersContent() {
               {filtered.map(order => (
                 <tr key={order._id} className="hover:bg-muted/50">
                   <td className="p-3 font-mono text-xs">{order._id.slice(-6)}</td>
-                  <td className="p-3">{order.buyer?.userName || order.guestDetails?.fullName || 'Guest'}</td>
+                  <td className="p-3">
+                    <div>
+                      <div className="font-medium">{order.buyer?.userName || order.guestDetails?.fullName || 'Guest'}</div>
+                      <div className="text-xs text-muted-foreground">{order.buyer?.userEmail || order.guestDetails?.email || 'N/A'}</div>
+                    </div>
+                  </td>
                   <td className="p-3 max-w-xs truncate">
                     {order.items.length} item(s)
                   </td>
-                  <td className="p-3">PKR {order.totalAmount.toLocaleString()}</td>
+                  <td className="p-3">PKR {(order.finalAmount ?? order.totalAmount).toLocaleString()}</td>
                   <td className="p-3 uppercase text-xs font-bold text-muted-foreground">{order.paymentMethod}</td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded text-xs ${

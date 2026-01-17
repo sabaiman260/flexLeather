@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
@@ -49,11 +48,10 @@ export default function FeaturedProducts() {
           {products.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`} className="group">
               <div className="relative overflow-hidden bg-muted aspect-square mb-4">
-                <Image
+                <img
                   src={product.image}
                   alt={product.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                 />
                 {favorites.includes(product.id) ? (
                   <button

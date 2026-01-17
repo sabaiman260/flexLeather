@@ -134,13 +134,13 @@ function OrderDetailsContent() {
                       <img
                         src={item.product.imageUrls[0]}
                         alt={item.product.name}
-                        className="w-full h-full object-cover"
+                        className="object-cover w-full h-full"
                       />
                     ) : item.product?.images?.[0] ? (
                       <img
                         src={item.product.images[0]}
                         alt={item.product.name}
-                        className="w-full h-full object-cover"
+                        className="object-cover w-full h-full"
                       />
                     ) : null}
                   </div>

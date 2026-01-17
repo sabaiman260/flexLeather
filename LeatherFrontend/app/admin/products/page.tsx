@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch, API_BASE_URL, BackendProduct } from '@/lib/api'
-import Image from 'next/image'
 import { X, Upload, Plus, Pencil, Trash2 } from 'lucide-react'
 
 type FormState = {
@@ -233,7 +232,11 @@ export default function AdminProductsPage() {
                 <tr key={p._id} className="hover:bg-muted/50 transition">
                   <td className="p-4">
                     <div className="relative w-12 h-12 bg-gray-100 rounded overflow-hidden">
-                      {p.imageUrls?.[0] && <Image src={p.imageUrls[0]} alt={p.name} fill className="object-cover" />}
+                      {p.imageUrls?.[0] ? (
+                        <img src={p.imageUrls[0]} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <img src="/placeholder.jpg" alt="placeholder" className="w-full h-full object-cover" />
+                      )}
                     </div>
                   </td>
                   <td className="p-4 font-medium">{p.name}</td>
@@ -333,7 +336,8 @@ export default function AdminProductsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                   {imagePreviews.map((src, index) => (
                     <div key={index} className="relative aspect-square border rounded-lg overflow-hidden group bg-gray-50">
-                      <Image src={src} alt="Preview" fill className="object-cover" />
+                      {/* Use native img for blob/local previews to avoid Next/Image loader issues */}
+                      <img src={src} alt="Preview" className="w-full h-full object-cover" />
                       <button
                         onClick={() => removeImage(index)}
                         className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"

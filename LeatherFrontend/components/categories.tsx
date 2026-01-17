@@ -1,7 +1,8 @@
-'use client'
+ 'use client'
 
 import Link from 'next/link'
 import { useState } from 'react'
+import Image from 'next/image'
 
 const categories = [
   {
@@ -53,9 +54,11 @@ export default function Categories() {
             >
               <div className="relative w-full aspect-square rounded-full overflow-hidden bg-neutral-700">
                 <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-110">
-                  <img
+                  <Image
                     src={category.image}
                     alt={category.name}
+                    width={400}
+                    height={400}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/30 to-transparent" />

@@ -46,21 +46,61 @@ export default function AdminReviewsPage() {
   }, [])
 
   const approveReview = async (id: string) => {
+    if (!id || typeof id !== 'string') {
+      alert('Invalid review ID')
+      return
+    }
+
     try {
-      await apiFetch(`/api/v1/reviews/approve/${id}`, { method: 'PUT' })
-      setReviews(prev => prev.filter(r => r._id !== id))
-    } catch (e) {
-      alert('Failed to approve review')
+      console.log('Approving review with ID:', id)
+      const response = await apiFetch(`/api/v1/reviews/approve/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('Approval response:', response)
+
+      if (response && response.success !== false) {
+        setReviews(prev => prev.filter(r => r._id !== id))
+        alert('Review approved successfully')
+      } else {
+        throw new Error(response?.message || 'Approval failed')
+      }
+    } catch (e: any) {
+      console.error('Approve review error:', e)
+      const errorMessage = e?.message || e?.body?.message || 'Unknown error occurred'
+      alert(`Failed to approve review: ${errorMessage}`)
     }
   }
 
   const rejectReview = async (id: string) => {
+    if (!id || typeof id !== 'string') {
+      alert('Invalid review ID')
+      return
+    }
+
     if (!confirm('Are you sure you want to reject (delete) this review?')) return
+
     try {
-      await apiFetch(`/api/v1/reviews/${id}`, { method: 'DELETE' })
-      setReviews(prev => prev.filter(r => r._id !== id))
-    } catch (e) {
-      alert('Failed to reject review')
+      console.log('Rejecting review with ID:', id)
+      const response = await apiFetch(`/api/v1/reviews/${id}`, {
+        method: 'DELETE'
+      })
+
+      console.log('Rejection response:', response)
+
+      if (response && response.success !== false) {
+        setReviews(prev => prev.filter(r => r._id !== id))
+        alert('Review rejected successfully')
+      } else {
+        throw new Error(response?.message || 'Rejection failed')
+      }
+    } catch (e: any) {
+      console.error('Reject review error:', e)
+      const errorMessage = e?.message || e?.body?.message || 'Unknown error occurred'
+      alert(`Failed to reject review: ${errorMessage}`)
     }
   }
 

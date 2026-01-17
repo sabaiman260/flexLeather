@@ -1,24 +1,33 @@
 //login user can change phone number or address.New details saved inside shippingDetails It does NOT update the user’s 
 //guest user:Saved in guestDetails + copied to shippingDetails
 import { asyncHandler } from "../../core/utils/async-handler.js";
+import mongoose from "mongoose";
 import Order from "../../models/Order.model.js";
 import Product from "../../models/Product.model.js";
 import Payment from "../../models/Payment.model.js";
 import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
+import { mailTransporter } from "../../shared/helpers/mail.helper.js";
+import { orderConfirmationMailBody } from "../../shared/constants/mail.constant.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 
 //-------------------- CREATE ORDER --------------------//
 const createOrder = asyncHandler(async (req, res) => {
+    const SHIPPING_COST = 200;
     const { items, guestDetails, paymentMethod } = req.body;
 
+    console.log("📥 Received order request:", { items, guestDetails, paymentMethod });
+
     if (!items || items.length === 0) {
+        console.error("❌ No items in order");
         throw new ApiError(400, "Order items are required");
     }
 
     // Validate Product Options (Size/Color)
     const productIds = items.map(i => i.productId);
+    console.log("🔎 Fetching products from DB:", productIds);
     const products = await Product.find({ _id: { $in: productIds } });
+    console.log("✅ Products fetched:", products.map(p => p._id.toString()));
     const productMap = new Map(products.map(p => [p._id.toString(), p]));
 
     let calculatedTotal = 0;
@@ -27,100 +36,154 @@ const createOrder = asyncHandler(async (req, res) => {
     for (const item of items) {
         const product = productMap.get(item.productId);
         if (!product) {
+            console.error("❌ Product not found:", item.productId);
             throw new ApiError(404, `Product not found: ${item.productId}`);
         }
 
-        if (product.colors && product.colors.length > 0 && !item.selectedColor) {
+        if (product.colors?.length > 0 && !item.selectedColor) {
+            console.error(`❌ Color selection missing for product ${product.name}`);
             throw new ApiError(400, `Color selection is required for product: ${product.name}`);
         }
-        if (product.sizes && product.sizes.length > 0 && !item.selectedSize) {
-             throw new ApiError(400, `Size selection is required for product: ${product.name}`);
-        }
-        
-        // Validate that the selected option is actually valid
-        if (item.selectedColor && product.colors.length > 0 && !product.colors.includes(item.selectedColor)) {
-             throw new ApiError(400, `Invalid color '${item.selectedColor}' for product: ${product.name}`);
-        }
-        if (item.selectedSize && product.sizes.length > 0 && !product.sizes.includes(item.selectedSize)) {
-             throw new ApiError(400, `Invalid size '${item.selectedSize}' for product: ${product.name}`);
+        if (product.sizes?.length > 0 && !item.selectedSize) {
+            console.error(`❌ Size selection missing for product ${product.name}`);
+            throw new ApiError(400, `Size selection is required for product: ${product.name}`);
         }
 
-        const price = product.price; // Server-side price
+        // Validate options
+        if (item.selectedColor && product.colors?.length > 0 && !product.colors.includes(item.selectedColor)) {
+            console.error(`❌ Invalid color '${item.selectedColor}' for product ${product.name}`);
+            throw new ApiError(400, `Invalid color '${item.selectedColor}' for product: ${product.name}`);
+        }
+        if (item.selectedSize && product.sizes?.length > 0 && !product.sizes.includes(item.selectedSize)) {
+            console.error(`❌ Invalid size '${item.selectedSize}' for product ${product.name}`);
+            throw new ApiError(400, `Invalid size '${item.selectedSize}' for product: ${product.name}`);
+        }
+
+        const price = product.price;
         const quantity = item.quantity || 1;
         calculatedTotal += price * quantity;
 
         mappedItems.push({
             product: item.productId,
             variant: item.variantId,
-            quantity: quantity,
-            price: price,
+            quantity,
+            price,
             selectedColor: item.selectedColor,
             selectedSize: item.selectedSize
         });
     }
 
+    const totalWithShipping = calculatedTotal + SHIPPING_COST;
+
+    if (!paymentMethod || !["cod","jazzcash","easypaisa","card","payfast"].includes(paymentMethod)) {
+        console.error("❌ Invalid payment method:", paymentMethod);
+        throw new ApiError(400, "Valid payment method is required");
+    }
+
     let orderData = {
         items: mappedItems,
-        totalAmount: calculatedTotal,
-        finalAmount: calculatedTotal,
-        paymentMethod
+        totalAmount: totalWithShipping,
+        finalAmount: totalWithShipping,
+        shippingCost: SHIPPING_COST,
+        paymentMethod,
+        paymentStatus: "pending",
+        orderStatus: "pending"
     };
 
-    // ---------------- BUYER CHECKOUT ----------------
+    console.log('🛠️ Preparing order data for', req.user ? 'logged-in user' : 'guest');
+
     if (req.user) {
+        console.log("👤 Logged-in user checkout:", req.user._id);
         orderData.buyer = req.user._id;
+        orderData.guestDetails = null;
+        orderData.shippingAddress = guestDetails?.address || req.user.userAddress;
 
-        // If buyer provides new checkout details → use them
-        if (guestDetails) {
-            orderData.shippingAddress = guestDetails.address;
-            orderData.guestDetails = guestDetails; // Also save guestDetails if provided for contact info update?
-            // Actually original code only saved address if guestDetails provided.
-            // But we might need phone number for payment.
-            // Original: 
-            // if (guestDetails) { orderData.shippingAddress = guestDetails.address; } 
-            // else { orderData.shippingAddress = req.user.userAddress; }
-            // It didn't save guestDetails object itself for logged in users.
-            // But we need phone number for EasyPaisa.
-            // Let's ensure we have a phone number.
-            // User model has phoneNumber.
-            // If guestDetails provided, maybe we should update User or just use it?
-            // I'll stick to original logic but ensure we can access phone later.
+        if (!orderData.shippingAddress) {
+            console.error("❌ No shipping address for buyer");
+            throw new ApiError(400, "Shipping address is required for buyer checkout");
+        }
+
+    } else {
+        console.log("👥 Guest checkout");
+        if (!guestDetails) throw new ApiError(400, "Guest details are required");
+
+        const requiredFields = ["fullName","email","phone","address"];
+        const missingFields = requiredFields.filter(f => !guestDetails[f]);
+        if (missingFields.length) {
+            console.error("❌ Missing guest fields:", missingFields);
+            throw new ApiError(400, `Missing guest details: ${missingFields.join(", ")}`);
+        }
+
+        orderData.buyer = null;
+        orderData.guestDetails = {
+            fullName: guestDetails.fullName.trim(),
+            email: guestDetails.email.toLowerCase().trim(),
+            phone: guestDetails.phone.trim(),
+            address: guestDetails.address.trim()
+        };
+        orderData.shippingAddress = guestDetails.address.trim();
+    }
+
+    let newOrder;
+    try {
+        console.log("💾 Creating order in DB...");
+        newOrder = await Order.create(orderData);
+        console.log("✅ Order created with ID:", newOrder._id);
+
+        // Immediate verification
+        const savedOrder = await Order.findById(newOrder._id);
+        if (!savedOrder) {
+            console.error("❌ Order was not saved!");
+            throw new Error("Order creation failed: Document not persisted");
         } else {
-            // Otherwise auto-fill from profile
-            orderData.shippingAddress = req.user.userAddress;
-        }
-    } 
-    // ---------------- GUEST CHECKOUT ----------------
-    else {
-        if (!guestDetails) {
-            throw new ApiError(400, "Guest details are required for guest checkout");
+            console.log("🔍 Verified order in DB:", savedOrder._id);
         }
 
-        orderData.guestDetails = guestDetails;
-        orderData.shippingAddress = guestDetails.address;
+    } catch (err) {
+        console.error("❌ Order creation failed:", err.message, err);
+        throw new ApiError(500, "Failed to create order: " + err.message);
     }
 
-    const newOrder = await Order.create(orderData);
-
-    // For COD, auto-create a pending Payment record for admin to manage
     if (paymentMethod === "cod") {
-        await Payment.create({
-            order: newOrder._id,
-            method: "cod",
-            amount: calculatedTotal,
-            status: "pending"
-        });
+        try {
+            await Payment.create({ order: newOrder._id, method: "cod", amount: calculatedTotal, status: "pending" });
+            console.log("💰 COD payment record created for order:", newOrder._id);
+        } catch (err) {
+            console.error("❌ Failed to create COD payment record:", err.message);
+        }
     }
 
-    return res
-        .status(201)
-        .json(new ApiResponse(201, newOrder, "Order placed successfully"));
+    return res.status(201).json(new ApiResponse(201, newOrder, "Order placed successfully"));
 });
 
 //-------------------- GET BUYER ORDERS --------------------//
 const getUserOrders = asyncHandler(async (req, res) => {
-    const orders = await Order.find({ buyer: req.user._id });
+    const orders = await Order.find({ buyer: req.user._id })
+        .populate("buyer", "userName userEmail phoneNumber userAddress")
+        .sort({ createdAt: -1 });
     return res.status(200).json(new ApiResponse(200, orders, "Orders fetched successfully"));
+});
+
+//-------------------- GET ELIGIBLE ORDERS FOR REVIEW --------------------//
+const getEligibleOrdersForReview = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const userId = req.user._id;
+    const userEmail = req.user.userEmail;
+
+    const eligibleOrders = await Order.find({
+        paymentStatus: "paid",
+        orderStatus: "delivered",
+        "items.product": productId,
+        $or: [
+            { buyer: userId },
+            { "guestDetails.email": userEmail }
+        ]
+    }).select("_id createdAt totalAmount paymentMethod items.product items.quantity")
+      .populate("buyer", "userName userEmail")
+      .populate("items.product", "name")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(new ApiResponse(200, eligibleOrders, "Eligible orders fetched successfully"));
 });
 
 //-------------------- GET SINGLE ORDER --------------------//
@@ -150,9 +213,9 @@ const getOrder = asyncHandler(async (req, res) => {
 
 //-------------------- ADMIN: GET ALL ORDERS --------------------//
 const getAllOrders = asyncHandler(async (req, res) => {
-    // Lightweight list: Select only necessary fields
+    // Lightweight list: Select only necessary fields (include shipping/final totals for admin display)
     const orders = await Order.find()
-        .select("_id totalAmount paymentMethod paymentStatus orderStatus createdAt items guestDetails")
+        .select("_id totalAmount finalAmount shippingCost paymentMethod paymentStatus orderStatus createdAt items guestDetails buyer")
         .populate("buyer", "userName userEmail")
         .sort({ createdAt: -1 });
 
@@ -204,4 +267,4 @@ const updateOrderPaymentStatus = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, order, "Order payment updated successfully"));
 });
 
-export { createOrder, getUserOrders, getOrder, getAllOrders, updateOrderStatus, updateOrderPaymentStatus };
+export { createOrder, getUserOrders, getEligibleOrdersForReview, getOrder, getAllOrders, updateOrderStatus, updateOrderPaymentStatus };

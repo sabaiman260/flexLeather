@@ -51,6 +51,8 @@ export default function ProductDetail() {
   const [reviewRating, setReviewRating] = useState<number>(5)
   const [reviewComment, setReviewComment] = useState<string>('')
   const [reviewImages, setReviewImages] = useState<FileList | null>(null)
+  const [eligibleOrders, setEligibleOrders] = useState<any[]>([])
+  const [selectedOrderId, setSelectedOrderId] = useState<string>('')
 
   useEffect(() => {
     (async () => {
@@ -75,6 +77,17 @@ export default function ProductDetail() {
         const res2 = await apiFetch(`/api/v1/reviews/product/${productId}`)
         setReviews(res2?.data || [])
       } catch {}
+
+      // Fetch eligible orders for review - ONLY for logged-in users
+      const token = localStorage.getItem('accessToken')
+      if (token) {
+        try {
+          const res3 = await apiFetch(`/api/v1/orders/eligible-for-review/${productId}`)
+          setEligibleOrders(res3?.data || [])
+        } catch {
+          // Silently fail for protected API calls
+        }
+      }
     })()
   }, [productId])
 
@@ -139,6 +152,8 @@ export default function ProductDetail() {
                   alt={product.name}
                   fill
                   className="object-cover"
+                  priority
+                  loading="eager"
                 />
               </div>
               <div className="grid grid-cols-4 gap-2">
@@ -314,7 +329,12 @@ export default function ProductDetail() {
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault()
-                    
+
+                    if (!selectedOrderId) {
+                      toast.error('Please select an order to review')
+                      return
+                    }
+
                     if (reviewComment.length < 5) {
                       toast.error('Comment must be at least 5 characters long')
                       return
@@ -322,9 +342,10 @@ export default function ProductDetail() {
 
                     const fd = new FormData()
                     fd.append('product', productId)
-                    fd.append('rating', String(reviewRating)) // Backend expects number, z.coerce.number() handles string
+                    fd.append('orderId', selectedOrderId)
+                    fd.append('rating', String(reviewRating))
                     fd.append('comment', reviewComment)
-                    
+
                     if (reviewImages) {
                       for (let i = 0; i < reviewImages.length; i++) {
                         fd.append('images', reviewImages[i])
@@ -337,16 +358,17 @@ export default function ProductDetail() {
                         credentials: 'include',
                         body: fd,
                       })
-                      
+
                       if (!res.ok) {
                         const data = await res.json().catch(() => ({}))
                         throw new Error(data.message || 'Failed to submit review')
                       }
-                      
+
                       toast.success('Review submitted and awaiting approval')
                       setReviewComment('')
                       setReviewRating(5)
                       setReviewImages(null)
+                      setSelectedOrderId('')
                       // Reset file input
                       const fileInput = document.getElementById('review-images') as HTMLInputElement
                       if (fileInput) fileInput.value = ''
@@ -356,20 +378,45 @@ export default function ProductDetail() {
                   }}
                   className="space-y-3"
                 >
+                  {eligibleOrders.length > 0 && (
+                    <div>
+                      <label className="block text-sm mb-2">Select Order to Review</label>
+                      <select
+                        value={selectedOrderId}
+                        onChange={(e) => setSelectedOrderId(e.target.value)}
+                        className="w-full border border-border px-3 py-2"
+                        required
+                      >
+                        <option value="">Choose an order...</option>
+                        {eligibleOrders.map(order => (
+                          <option key={order._id} value={order._id}>
+                            Order #{order._id.slice(-6)} - {new Date(order.createdAt).toLocaleDateString()} - PKR {order.totalAmount.toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {eligibleOrders.length === 0 && (
+                    <div className="text-sm text-muted-foreground p-3 bg-muted rounded">
+                      No eligible orders found. You can only review products from orders that are paid and delivered.
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <select 
-                      name="rating" 
+                    <select
+                      name="rating"
                       className="border border-border px-3 py-2"
                       value={reviewRating}
                       onChange={(e) => setReviewRating(Number(e.target.value))}
                     >
                       {[1,2,3,4,5].map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
-                    <Input 
+                    <Input
                       id="review-images"
-                      name="images" 
-                      type="file" 
-                      multiple 
+                      name="images"
+                      type="file"
+                      multiple
                       onChange={(e) => setReviewImages(e.target.files)}
                     />
                   </div>
