@@ -47,6 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchMe = async () => {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      setUser(null)
+      setIsLoading(false)
+      return
+    }
+
     try {
       const res = await apiFetch('/api/v1/auth/me')
       if (res?.data?.user) setUser(res.data.user)
@@ -55,10 +62,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
       }
     } catch (error: any) {
-      if (error.status === 401) {
-        localStorage.removeItem('accessToken')
-        setUser(null)
-      }
+        // Treat 401/400 and connection failures (status 0) as expected: clear local session
+        if (error.status === 401 || error.status === 400 || error.status === 0) {
+          localStorage.removeItem('accessToken')
+          setUser(null)
+        } else {
+          // Only log truly unexpected errors
+          console.error('Auth fetch error:', error)
+        }
+    } finally {
+      // Always ensure loading is set to false
+      setIsLoading(false)
     }
   }
 
@@ -66,23 +80,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
     if (!token) {
+      setUser(null)
       setIsLoading(false)
       return
     }
-    await fetchMe()
-    setIsLoading(false)
+
+    // Add timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.warn('Auth check timed out, setting loading to false')
+      setIsLoading(false)
+    }, 10000) // 10 second timeout
+
+    try {
+      await fetchMe()
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   useEffect(() => {
     checkAuth()
-    // Periodically refresh session every 5 minutes
+    // Periodically refresh session every 5 minutes (only if token exists and is valid)
     const interval = setInterval(() => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
-      if (token) checkAuth()
+      if (token) {
+        // Only attempt refresh if we have a user (meaning token was previously valid)
+        if (user) {
+          fetchMe()
+        }
+      }
     }, 5 * 60 * 1000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [user])
 
   const login = (token: string, userData: User) => {
     localStorage.setItem('accessToken', token)

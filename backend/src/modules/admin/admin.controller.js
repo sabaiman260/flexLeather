@@ -72,7 +72,28 @@ export const getPendingReviews = asyncHandler(async (req, res) => {
   const reviews = await Review.find({ isApproved: false })
     .populate("user", "userName profileImage")
     .populate("product", "name image");
-  return res.status(200).json(new ApiResponse(200, reviews));
+
+  // Convert S3 keys to signed URLs
+  const reviewsWithUrls = await Promise.all(reviews.map(async (review) => {
+    const userProfileImage = review.user?.profileImage
+      ? await S3UploadHelper.getSignedUrl(review.user.profileImage)
+      : null;
+
+    const imageUrls = review.images && review.images.length > 0
+      ? await Promise.all(review.images.map(key => S3UploadHelper.getSignedUrl(key)))
+      : [];
+
+    return {
+      ...review._doc,
+      user: {
+        ...review.user._doc,
+        profileImage: userProfileImage
+      },
+      imageUrls
+    };
+  }));
+
+  return res.status(200).json(new ApiResponse(200, reviewsWithUrls));
 });
 
 // DASHBOARD STATS

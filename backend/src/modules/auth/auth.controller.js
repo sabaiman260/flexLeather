@@ -33,9 +33,46 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // 1️⃣ Check existing user
-    const existingUser = await User.findOne({ userEmail });
+    const existingUser = await User.findOne({ userEmail: userEmail.toLowerCase() });
     if (existingUser) {
-        throw new ApiError(400, "User already exists");
+        // If user exists and is verified, return conflict
+        if (existingUser.userIsVerified) {
+            return res.status(409).json(
+                new ApiResponse(409, {
+                    code: "USER_ALREADY_EXISTS",
+                    message: "An account with this email already exists and is verified."
+                }, "User already exists")
+            );
+        }
+
+        // If user exists but is not verified, resend verification email
+        const { hashedToken, tokenExpiry } = existingUser.generateTemporaryToken();
+        existingUser.userVerificationToken = hashedToken;
+        existingUser.userVerificationTokenExpiry = tokenExpiry;
+        await existingUser.save();
+
+        const base = process.env.BASE_URL || "http://localhost:3000";
+        const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
+
+        // Send verification email (DO NOT fail if email fails)
+        try {
+            await mailTransporter.sendMail({
+                from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                to: userEmail,
+                subject: "Verify your email - FlexLeather",
+                html: userVerificationMailBody(existingUser.userName, verificationLink)
+            });
+        } catch (error) {
+            console.error("Email sending failed:", error.message);
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, {
+                code: "VERIFICATION_RESENT",
+                userId: existingUser._id,
+                userEmail: existingUser.userEmail
+            }, "Verification email has been resent. Please check your email.")
+        );
     }
 
     let profileImageKey = null;
@@ -83,7 +120,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // 5️⃣ Send verification email (DO NOT fail registration)
     try {
         await mailTransporter.sendMail({
-            from: process.env.MAILTRAP_SENDEREMAIL,
+            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
             to: userEmail,
             subject: "Verify your email",
             html: userVerificationMailBody(userName, verificationLink)
@@ -244,7 +281,7 @@ const forgotPasswordMail = asyncHandler(async (req, res) => {
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${unHashedToken}`;
 
     await mailTransporter.sendMail({
-        from: process.env.MAILTRAP_SENDEREMAIL,
+        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
         to: userEmail,
         subject: "Password Reset",
         html: userForgotPasswordMailBody(user.userName, resetLink),

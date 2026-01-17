@@ -57,18 +57,40 @@ export default function RegisterPage() {
       fd.append('userAddress', address)
       if (profileFile) fd.append('profileImage', profileFile)
 
-      await apiFetch('/api/v1/auth/register', {
+      const response = await apiFetch('/api/v1/auth/register', {
         method: 'POST',
         body: fd
       })
 
-      alert('Registered! Check your email to verify.')
+      // Handle different registration outcomes gracefully
+      if (response?.data?.code === 'USER_ALREADY_EXISTS') {
+        setError('An account with this email already exists. Please try logging in instead.')
+        return
+      }
+
+      if (response?.data?.code === 'VERIFICATION_RESENT') {
+        alert('This email is already registered but not verified. A new verification email has been sent. Please check your email.')
+        window.location.href = '/login'
+        return
+      }
+
+      // Success case - new user registration
+      alert('Registered successfully! Check your email to verify your account.')
       window.location.href = '/login'
     } catch (err: any) {
-      // Log full error for debugging (includes backend validation details)
-      console.error('Register error:', err)
-      console.error('Error details:', err?.details || err?.body)
-      setError(err?.message || 'Registration failed')
+      // Only console.error for real failures (500, network, DB errors)
+      // Expected cases (USER_ALREADY_EXISTS, VERIFICATION_RESENT) are handled above
+      const isExpectedCase = err?.status === 409 || (err?.body?.code === 'USER_ALREADY_EXISTS') || (err?.body?.code === 'VERIFICATION_RESENT')
+
+      if (!isExpectedCase) {
+        console.error('Registration failed:', err)
+        console.error('Error details:', err?.details || err?.body)
+      }
+
+      // For unexpected errors, show generic message
+      if (!isExpectedCase) {
+        setError(err?.message || 'Registration failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

@@ -14,8 +14,9 @@ const getAllProducts = asyncHandler(async (_req, res) => {
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
+      const keys = Array.isArray(p.images) ? p.images : [];
       const imageUrls = await Promise.all(
-        p.images.map((key) => S3UploadHelper.getSignedUrl(key))
+        keys.map((key) => S3UploadHelper.getSignedUrl(key))
       );
       return { ...p._doc, imageUrls };
     })
@@ -45,8 +46,9 @@ const getProductsByCategoryId = asyncHandler(async (req, res) => {
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
+      const keys = Array.isArray(p.images) ? p.images : [];
       const imageUrls = await Promise.all(
-        p.images.map((key) => S3UploadHelper.getSignedUrl(key))
+        keys.map((key) => S3UploadHelper.getSignedUrl(key))
       );
       return { ...p._doc, imageUrls };
     })
@@ -90,19 +92,40 @@ const createProduct = asyncHandler(async (req, res) => {
   specs = toArray(specs);
   isActive = typeof isActive === "string" ? isActive === "true" : true;
 
-  // Upload images to S3
+  // Upload images to Cloudinary (via S3UploadHelper)
   let imageKeys = [];
-  if (Array.isArray(req.files) && req.files.length > 0) {
-    try {
-      const uploads = await S3UploadHelper.uploadMultipleFiles(
-        req.files,
-        "product-images"
-      );
-      imageKeys = uploads.map((u) => u.key);
-    } catch (err) {
-      console.error("Product image upload failed:", err);
-      imageKeys = [];
+  // Minimal diagnostics for debugging uploads (do not log full headers)
+  try {
+    const hasFile = !!req.file
+    const hasFiles = Array.isArray(req.files) ? req.files.length > 0 : !!req.files
+    console.info("[product:create] upload inputs - req.file:", hasFile, ", req.files:", Array.isArray(req.files) ? req.files.length : (req.files ? Object.keys(req.files) : null))
+    console.info("[product:create] request headers:", {
+      'content-type': req.headers['content-type'] || req.headers['Content-Type'],
+      'content-length': req.headers['content-length'] || req.headers['Content-Length'],
+    })
+  } catch (e) {
+    console.warn('[product:create] failed to log upload diagnostics', e)
+  }
+  try {
+    // multer may populate req.files as an array (upload.array) or as an object (upload.fields)
+    let filesArray = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      filesArray = req.files;
+    } else if (req.files && typeof req.files === 'object') {
+      // req.files could be an object of arrays
+      filesArray = Object.values(req.files).flat();
+    } else if (req.file) {
+      // multer single file upload uses req.file
+      filesArray = [req.file];
     }
+
+    if (filesArray.length > 0) {
+      const uploads = await S3UploadHelper.uploadMultipleFiles(filesArray, "product-images");
+      imageKeys = uploads.map((u) => u.key);
+    }
+  } catch (err) {
+    console.error("Product image upload failed:", err);
+    imageKeys = [];
   }
 
   let product;
@@ -130,8 +153,9 @@ const createProduct = asyncHandler(async (req, res) => {
 
   let imageUrls = [];
   try {
+    const keys = Array.isArray(product.images) ? product.images : [];
     imageUrls = await Promise.all(
-      product.images.map((key) => S3UploadHelper.getSignedUrl(key))
+      keys.map((key) => S3UploadHelper.getSignedUrl(key))
     );
   } catch (err) {
     console.error("Product image signed URL generation failed:", err);
@@ -184,24 +208,37 @@ const updateProduct = asyncHandler(async (req, res) => {
     product.isActive = typeof isActive === "string" ? isActive === "true" : isActive;
 
   // Upload new images
-  if (Array.isArray(req.files) && req.files.length > 0) {
-    try {
+  try {
+    let filesArray = [];
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      filesArray = req.files;
+    } else if (req.files && typeof req.files === "object") {
+      filesArray = Object.values(req.files).flat();
+    }
+
+    // If multer provided single file as req.file, include it
+    if (filesArray.length === 0 && req.file) {
+      filesArray = [req.file];
+    }
+
+    if (filesArray.length > 0) {
       const uploads = await S3UploadHelper.uploadMultipleFiles(
-        req.files,
+        filesArray,
         "product-images"
       );
       product.images = uploads.map((u) => u.key);
-    } catch (err) {
-      console.error("Product image upload failed:", err);
     }
+  } catch (err) {
+    console.error("Product image upload failed:", err);
   }
 
   await product.save();
 
   let imageUrls = [];
   try {
+    const keys = Array.isArray(product.images) ? product.images : [];
     imageUrls = await Promise.all(
-      product.images.map((key) => S3UploadHelper.getSignedUrl(key))
+      keys.map((key) => S3UploadHelper.getSignedUrl(key))
     );
   } catch (err) {
     console.error("Product image signed URL generation failed:", err);
@@ -233,8 +270,9 @@ const getProductDetail = asyncHandler(async (req, res) => {
   );
   if (!product || !product.isActive) throw new ApiError(404, "Product not found");
 
+  const detailKeys = Array.isArray(product.images) ? product.images : [];
   const imageUrls = await Promise.all(
-    product.images.map((key) => S3UploadHelper.getSignedUrl(key))
+    detailKeys.map((key) => S3UploadHelper.getSignedUrl(key))
   );
 
   return res
@@ -254,8 +292,9 @@ const searchProducts = asyncHandler(async (req, res) => {
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
+      const keys = Array.isArray(p.images) ? p.images : [];
       const imageUrls = await Promise.all(
-        p.images.map((key) => S3UploadHelper.getSignedUrl(key))
+        keys.map((key) => S3UploadHelper.getSignedUrl(key))
       );
       return { ...p._doc, imageUrls };
     })

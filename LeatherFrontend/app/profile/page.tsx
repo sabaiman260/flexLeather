@@ -1,7 +1,8 @@
-'use client'
+ 'use client'
 
 import { useEffect, useState } from 'react'
 import Header from '@/components/header'
+import Image from 'next/image'
 import Footer from '@/components/footer'
 import { useAuth } from '@/components/auth-provider'
 import { apiFetch } from '@/lib/api'
@@ -67,8 +68,15 @@ export default function ProfilePage() {
             <div className="border border-border p-6 rounded-lg bg-card">
               <div className="flex flex-col items-center">
                 <div className="w-24 h-24 rounded-full bg-muted border border-border mb-4 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {user?.profileImage ? <img src={user.profileImage} alt="Avatar" className="w-full h-full object-cover" /> : null}
+                  {user?.profileImage ? (
+                    <Image
+                      src={user.profileImage}
+                      alt="Avatar"
+                      width={96}
+                      height={96}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : null}
                 </div>
                 <div className="text-center space-y-1">
                   <div className="text-lg font-medium">{form.userName || 'Your Name'}</div>

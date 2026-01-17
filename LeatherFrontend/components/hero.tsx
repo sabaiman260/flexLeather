@@ -138,6 +138,7 @@ export default function Hero() {
               fill
               className="object-cover"
               priority={index === 0}
+              loading={index === 0 ? "eager" : "lazy"}
             />
             <div className="absolute inset-0 bg-black/30" />
           </div>

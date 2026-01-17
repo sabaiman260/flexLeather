@@ -22,23 +22,63 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [zip, setZip] = useState('')
+
   type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa' | 'payfast'
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
   const [transactionId, setTransactionId] = useState('')
   const [coupon, setCoupon] = useState('')
   const [discount, setDiscount] = useState(0)
+  const [authLoadingTimeout, setAuthLoadingTimeout] = useState(false)
+  const [hasAutoFilled, setHasAutoFilled] = useState(false)
   const SHIPPING_COST = 200
 
-  // ✅ Autofill once user is loaded
+  // Timeout for auth loading to prevent infinite loading screen
   useEffect(() => {
-    if (!isLoading && user) {
-      setName(user.userName || '')
-      setEmail(user.userEmail || '')
-      setPhone(user.phoneNumber || '')
-      setAddress(user.userAddress || '')
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        setAuthLoadingTimeout(true)
+      }, 8000) // 8 second timeout
+      return () => clearTimeout(timeout)
     }
-  }, [isLoading, user])
+  }, [isLoading])
+
+  // ✅ Autofill once when user data becomes available (only once to prevent overwriting user input)
+  useEffect(() => {
+    if (!isLoading && user && !hasAutoFilled) {
+      setName(prev => prev || user.userName || '')
+      setEmail(prev => prev || user.userEmail || '')
+      setPhone(prev => prev || user.phoneNumber || '')
+      setAddress(prev => prev || user.userAddress || '')
+      setHasAutoFilled(true)
+    }
+  }, [isLoading, user, hasAutoFilled])
+
+  // Fallback: fetch profile if token exists but user context is empty (ensures address shows)
+  useEffect(() => {
+    const ensureProfile = async () => {
+      if (isLoading || user || hasAutoFilled) return
+
+      // Only attempt to fetch profile if we have a token (logged-in user)
+      const token = localStorage.getItem('accessToken')
+      if (!token) return
+
+      try {
+        const res = await apiFetch('/api/v1/auth/me')
+        const me = res?.data?.user
+        if (me) {
+          setName(prev => prev || me.userName || '')
+          setEmail(prev => prev || me.userEmail || '')
+          setPhone(prev => prev || me.phoneNumber || '')
+          setAddress(prev => prev || me.userAddress || '')
+          setHasAutoFilled(true)
+        }
+      } catch {
+        // Silently fail - likely guest checkout or auth issue
+      }
+    }
+    ensureProfile()
+  }, [isLoading, user, hasAutoFilled])
 
   const applyCoupon = () => {
     if (coupon.toUpperCase() === 'SAVE10') {
@@ -55,7 +95,7 @@ export default function CheckoutPage() {
 
   const placeOrder = async () => {
     // Validate that all items have required selections
-    const hasMissingOptions = items.some(i => 
+    const hasMissingOptions = items.some(i =>
       (i.availableColors && i.availableColors.length > 0 && !i.selectedColor) ||
       (i.availableSizes && i.availableSizes.length > 0 && !i.selectedSize)
     )
@@ -81,19 +121,50 @@ export default function CheckoutPage() {
       return
     }
 
-    const guestDetails = { fullName: name, email, phone, address: `${address}, ${city}, ${zip}` }
-    const orderItems = items.map(i => ({ 
-      productId: i.id, 
-      quantity: i.quantity, 
+    const orderItems = items.map(i => ({
+      productId: i.id,
+      quantity: i.quantity,
       price: i.price,
       selectedColor: i.selectedColor,
-      selectedSize: i.selectedSize 
+      selectedSize: i.selectedSize
     }))
+
+    // Prepare request body - conditionally include guestDetails
+    const requestBody: any = {
+      items: orderItems,
+      totalAmount: finalTotal,
+      paymentMethod
+    }
+
+    // For logged-in users: only send guestDetails if they modified address from profile
+    // For guests: always send guestDetails
+    if (!user) {
+      // Guest checkout - always send guestDetails
+      requestBody.guestDetails = {
+        fullName: name,
+        email,
+        phone,
+        address: `${address}, ${city}, ${zip}`
+      }
+    } else {
+      // Logged-in user - send guestDetails only if address differs from profile
+      const profileAddress = user.userAddress || ''
+      const currentAddress = `${address}, ${city}, ${zip}`
+
+      if (currentAddress !== profileAddress && currentAddress.trim() !== ', , ') {
+        requestBody.guestDetails = {
+          fullName: name,
+          email,
+          phone,
+          address: currentAddress
+        }
+      }
+    }
 
     try {
       const res = await apiFetch('/api/v1/orders', {
         method: 'POST',
-        body: JSON.stringify({ items: orderItems, totalAmount: finalTotal, paymentMethod, guestDetails })
+        body: JSON.stringify(requestBody)
       })
 
       const order = res?.data
@@ -176,7 +247,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (isLoading) return <p className="text-center py-20">Loading user info...</p>
+  if (isLoading && !authLoadingTimeout) return <p className="text-center py-20">Loading user info...</p>
 
   return (
     <>
@@ -189,7 +260,7 @@ export default function CheckoutPage() {
             <div className="space-y-8">
               <div className="border-b border-border pb-8">
                 <h2 className="text-lg font-light tracking-wide mb-6">Shipping Address</h2>
-                <form className="space-y-4">
+                <div className="space-y-4">
                   {[
                     { label: 'Full Name', value: name, setter: setName },
                     { label: 'Email', value: email, setter: setEmail },
@@ -202,13 +273,17 @@ export default function CheckoutPage() {
                       <label className="block text-sm font-light mb-2">{label}</label>
                       <input
                         type="text"
+                        name={label.toLowerCase().replace(' ', '-')}
+                        placeholder={`Enter ${label.toLowerCase()}`}
                         className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition"
                         value={value}
-                        onChange={e => setter(e.target.value)}
+                        onChange={(e) => setter(e.target.value)}
+                        autoComplete={label === 'Full Name' ? 'name' : label === 'Email' ? 'email' : label === 'Phone' ? 'tel' : 'address-level1'}
+                        required
                       />
                     </div>
                   ))}
-                </form>
+                </div>
               </div>
 
               <div>
@@ -288,7 +363,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-2 mb-6 text-sm">
-                  <div className="flex justify-between">0
+                  <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>PKR {totalPrice.toLocaleString()}</span>
                   </div>

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Search } from 'lucide-react'
+import { ShoppingCart, Search, Menu, X } from 'lucide-react'
 import { useCart } from '@/components/cart-context'
 import { useAuth } from '@/components/auth-provider'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -25,22 +25,115 @@ export default function Header() {
   const router = useRouter()
   const { totalItems } = useCart()
   const { user, isLoggedIn, logout, isLoading } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const q = searchParams?.get('q') || ''
     setSearch(q)
   }, [searchParams])
 
+  // Rehydrate mobile menu state from localStorage on mount and on route changes
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('mobileMenuOpen')
+      if (stored !== null) {
+        setMobileOpen(stored === 'true')
+      }
+    } catch (e) {}
+  }, [])
+
+  // Persist mobile menu state and re-apply on navigation so header remains consistent
+  useEffect(() => {
+    try {
+      localStorage.setItem('mobileMenuOpen', mobileOpen ? 'true' : 'false')
+    } catch (e) {}
+  }, [mobileOpen])
+
+  // When route changes, rehydrate the menu state from storage (preserve user's preference)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('mobileMenuOpen')
+      if (stored !== null) {
+        setMobileOpen(stored === 'true')
+      }
+    } catch (e) {}
+  }, [pathname])
+
   return (
     <>
+      {/* ================= MOBILE HEADER ================= */}
+      <header className="block md:hidden fixed top-0 left-0 w-full z-50 bg-primary shadow-md">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative w-10 h-10">
+              <Image src="/logos.png" alt="Flex Leather Logo" width={40} height={40} className="object-contain" priority />
+            </div>
+            <div className="flex flex-col text-[#E6D8C8]">
+              <span className="text-[10px] tracking-[0.3em] uppercase opacity-70">ESTD 2025</span>
+              <span className="text-[13px] font-serif font-bold tracking-widest uppercase leading-none">Flex Leather</span>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <Link href="/cart" className="relative p-2">
+              <ShoppingCart className="w-5 h-5 text-[#E6D8C8]" />
+              {totalItems > 0 && (
+                <span className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 bg-[#E6D8C8] text-black font-bold text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{totalItems}</span>
+              )}
+            </Link>
+
+            {/* Show Login/Register (when not logged in) or Avatar (when logged in) */}
+            {!isLoading && !isLoggedIn ? (
+              <div className="flex items-center gap-2">
+                <Link href="/login" className="text-sm px-2 py-1 rounded hover:bg-white/5 text-[#E6D8C8]">Login</Link>
+                <Link href="/register" className="text-sm px-2 py-1 rounded bg-white text-neutral-900">Sign Up</Link>
+              </div>
+            ) : null}
+
+            {isLoggedIn && !isLoading ? (
+              <Link href="/profile" className="p-1">
+                <Avatar className="h-8 w-8 border border-[#E6D8C8] bg-[#E6D8C8]">
+                  <AvatarImage src={user?.profileImage} alt={user?.userName} />
+                  <AvatarFallback className="font-semibold" style={{ backgroundColor: '#E6D8C8', color: '#3B2A1A' }}>{user?.userName?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
+                </Avatar>
+              </Link>
+            ) : null}
+
+            <button
+              onClick={() => setMobileOpen(v => !v)}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              className="p-2"
+            >
+              {mobileOpen ? <X className="w-6 h-6 text-[#E6D8C8]" /> : <Menu className="w-6 h-6 text-[#E6D8C8]" />}
+            </button>
+          </div>
+        </div>
+
+        {mobileOpen && (
+          <nav className="bg-primary/95 border-t border-white/10">
+            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3">
+              <Link href="/shop" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Shop</Link>
+              <Link href="/collections" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Collections</Link>
+              <Link href="/about" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>About</Link>
+              {!isLoggedIn && <Link href="/login" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Login</Link>}
+              {isLoggedIn && (
+                <>
+                  <Link href="/profile" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>My Profile</Link>
+                  {user?.userRole === 'admin' && <Link href="/admin" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Admin</Link>}
+                  <button onClick={() => { setMobileOpen(false); logout(); }} className="text-left py-2 px-3 rounded hover:bg-white/5">Log out</button>
+                </>
+              )}
+            </div>
+          </nav>
+        )}
+      </header>
       {/* ================= DESKTOP HEADER ================= */}
       <header
         className="
           hidden md:block
           fixed top-0 left-0 w-full z-50
-          bg-[#3B2A1A]
-          bg-opacity-100
-          backdrop-blur-none
+          bg-primary
           isolate
           shadow-md
         "
@@ -53,7 +146,8 @@ export default function Header() {
               <Image
                 src="/logos.png"
                 alt="Flex Leather Logo"
-                fill
+                width={56}
+                height={56}
                 className="object-contain"
                 priority
               />
@@ -199,6 +293,7 @@ export default function Header() {
       </header>
 
       {/* Spacer so content starts below fixed header (match header height) */}
+      <div className="md:hidden h-[64px]" />
       <div className="hidden md:block h-[88px]" />
     </>
   )

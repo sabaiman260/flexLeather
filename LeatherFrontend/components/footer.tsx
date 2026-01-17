@@ -17,7 +17,7 @@ function TikTokIcon(props: React.ComponentProps<'svg'>) {
 
 export default function Footer() {
   return (
-    <footer className="bg-[#3B2A1A] text-white">
+    <footer className="bg-primary text-primary-foreground">
       <div className="container-max md:px-6 py-16">
 
         {/* Footer Content Grid */}

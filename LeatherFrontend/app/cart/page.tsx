@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
@@ -41,7 +40,7 @@ export default function CartPage() {
                   {cartItems.map(item => (
                     <div key={(item as any)._cartId || item.id} className="flex gap-4 items-center border border-border p-4 rounded relative">
                       <div className="w-24 h-24 relative">
-                        <Image src={item.image ?? '/placeholder.jpg'} alt={item.name} fill className="object-cover" />
+                        <img src={item.image ?? '/placeholder.jpg'} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-serif text-sm mb-1">{item.name}</h4>
@@ -104,7 +103,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Shipping</span>
-                    <span>Free</span>
+                    <span>PKR 200</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Tax</span>
@@ -113,7 +112,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-lg font-serif mb-6">
                   <span>Total</span>
-                  <span>PKR {totalPrice.toLocaleString()}</span>
+                  <span>PKR {(totalPrice + 200).toLocaleString()}</span>
                 </div>
                 <Link href={cartItems.length && !hasMissingOptions ? '/checkout' : '#'}>
                   <Button disabled={cartItems.length === 0 || hasMissingOptions} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">

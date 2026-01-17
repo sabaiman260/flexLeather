@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function LeatherShowcase() {
   const images = [
@@ -17,13 +18,11 @@ export default function LeatherShowcase() {
         
         {/* Left Text Section */}
         <div className="flex-1 text-center lg:text-left">
-          <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-gray-900 mb-4">
             Premium Leather Collections
           </h2>
-          <p className="text-gray-700 mb-6 text-lg">
-            Discover our exquisite range of handcrafted leather products.
-            Each piece is designed for durability, elegance, and timeless style.
-            Perfect for fashion enthusiasts and professionals alike.
+          <p className="text-gray-700 mb-6 text-base sm:text-lg">
+            Discover our exquisite range of handcrafted leather products. Each piece is designed for durability, elegance, and timeless style.
           </p>
          <Link
   href="/shop"
@@ -36,14 +35,18 @@ export default function LeatherShowcase() {
 
         {/* Right 3D Slider */}
         <div className="flex-1 flex justify-center lg:justify-end">
-          <div className="relative w-[300px] h-[300px] perspective">
+          <div className="relative w-[220px] h-[220px] sm:w-[280px] sm:h-[280px] md:w-[340px] md:h-[340px] perspective">
             <div className="slider3d animate-rotate3D">
               {images.map((img, i) => (
                 <div key={i} className="slide">
-                  <img
+                  <Image
                     src={img}
-                    alt="product"
+                    alt={`showcase ${i+1}`}
+                    width={340}
+                    height={340}
                     className="w-full h-full object-cover rounded-xl shadow-lg"
+                    priority={i === 0}
+                    loading={i === 0 ? 'eager' : 'lazy'}
                   />
                 </div>
               ))}
