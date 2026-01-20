@@ -90,6 +90,12 @@ const submitManualPayment = asyncHandler(async (req, res) => {
     // Keep the order in pending state until admin verifies
     order.paymentStatus = 'pending';
     order.orderStatus = 'pending';
+    // Persist the submitted transaction/reference id on the order as well (payment-related field only)
+    try {
+        order.paymentTransactionId = transactionId;
+    } catch (e) {
+        console.warn('[payment] Failed to set paymentTransactionId on order', orderId, e?.message || e);
+    }
     await order.save();
 
     return res.status(201).json(new ApiResponse(201, payment, 'Manual payment submitted. Awaiting verification by admin.'));

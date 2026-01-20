@@ -8,7 +8,7 @@ import Payment from "../../models/Payment.model.js";
 import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
 import { mailTransporter } from "../../shared/helpers/mail.helper.js";
-import { orderConfirmationMailBody } from "../../shared/constants/mail.constant.js";
+import { orderConfirmationMailBody, paymentConfirmationMailBody } from "../../shared/constants/mail.constant.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 
 //-------------------- CREATE ORDER --------------------//
@@ -153,6 +153,63 @@ const createOrder = asyncHandler(async (req, res) => {
         }
     }
 
+    // Send order confirmation email immediately for COD orders (only once)
+    if (paymentMethod === 'cod') {
+        try {
+            // Protect against duplicates
+            if (!newOrder.orderConfirmationSent) {
+                // Resolve recipient
+                let customerName = '';
+                let customerEmail = '';
+                if (newOrder.buyer) {
+                    const populated = await Order.findById(newOrder._id).populate('buyer', 'userName userEmail');
+                    customerName = populated.buyer?.userName || '';
+                    customerEmail = populated.buyer?.userEmail || '';
+                } else if (newOrder.guestDetails) {
+                    customerName = newOrder.guestDetails.fullName;
+                    customerEmail = newOrder.guestDetails.email;
+                }
+
+                if (customerEmail) {
+                    const itemsForEmail = mappedItems.map(mi => {
+                        const prod = productMap.get(mi.product) || {};
+                        return { productName: prod.name || 'Product', quantity: mi.quantity, price: mi.price };
+                    });
+
+                    const mailHtml = orderConfirmationMailBody({
+                        orderId: newOrder._id.toString().slice(-6),
+                        customerName: customerName || (customerEmail.split('@')[0]),
+                        customerEmail,
+                        items: itemsForEmail,
+                        subtotal: calculatedTotal,
+                        shipping: SHIPPING_COST,
+                        total: newOrder.finalAmount || totalWithShipping,
+                        paymentMethod,
+                        shippingAddress: newOrder.shippingAddress
+                    });
+
+                    try {
+                        await mailTransporter.sendMail({
+                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                            to: customerEmail,
+                            subject: `Order Confirmation - Order #${newOrder._id}`,
+                            html: mailHtml
+                        });
+                        newOrder.orderConfirmationSent = true;
+                        await newOrder.save();
+                        console.log('[order] Order confirmation email sent for order', newOrder._id);
+                    } catch (mailErr) {
+                        console.error('[order] Failed to send order confirmation email for order', newOrder._id, mailErr?.message || mailErr);
+                    }
+                } else {
+                    console.warn('[order] No customer email; skipping order confirmation email for order', newOrder._id);
+                }
+            }
+        } catch (err) {
+            console.error('[order] Error in order confirmation flow for order', newOrder._id, err?.message || err);
+        }
+    }
+
     return res.status(201).json(new ApiResponse(201, newOrder, "Order placed successfully"));
 });
 
@@ -260,6 +317,58 @@ const updateOrderPaymentStatus = asyncHandler(async (req, res) => {
         else payment.status = "pending";
 
         await payment.save();
+    }
+
+    // Send payment confirmation email when admin marks an order as paid for JazzCash/EasyPaisa
+    try {
+        if (status === 'paid' && ['jazzcash', 'easypaisa'].includes(order.paymentMethod)) {
+            // Only send once
+            if (!order.paymentConfirmationSent) {
+                // Determine recipient
+                let customerName = '';
+                let customerEmail = '';
+                if (order.buyer) {
+                    // populate buyer minimal fields
+                    await order.populate('buyer', 'userName userEmail');
+                    customerName = order.buyer?.userName || '';
+                    customerEmail = order.buyer?.userEmail || '';
+                } else if (order.guestDetails) {
+                    customerName = order.guestDetails.fullName;
+                    customerEmail = order.guestDetails.email;
+                }
+
+                // Ensure we have an email to send to
+                if (customerEmail) {
+                    const paymentDetails = {
+                        orderId: order._id,
+                        customerName: customerName || (customerEmail.split('@')[0]),
+                        customerEmail,
+                        paymentMethod: order.paymentMethod,
+                        amount: payment?.amount || order.finalAmount || order.totalAmount,
+                        transactionId: payment?.transactionId || null
+                    };
+
+                    const html = paymentConfirmationMailBody(paymentDetails);
+                    try {
+                        await mailTransporter.sendMail({
+                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                            to: customerEmail,
+                            subject: `Payment Confirmed - Order #${order._id}`,
+                            html
+                        });
+                        // Mark as sent to avoid duplicates
+                        order.paymentConfirmationSent = true;
+                        await order.save();
+                    } catch (emailErr) {
+                        console.error('[order] Failed to send payment confirmation email for order', order._id, emailErr?.message || emailErr);
+                    }
+                } else {
+                    console.warn('[order] No customer email found for order', order._id, 'skipping payment confirmation email');
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[order] Error during payment confirmation flow for order', order._id, err?.message || err);
     }
 
     return res

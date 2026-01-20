@@ -25,6 +25,7 @@ type Order = {
   paymentStatus: 'pending' | 'paid' | 'failed'
   orderStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
   createdAt: string
+  paymentTransactionId?: string | null
 }
 
 function OrdersContent() {
@@ -134,7 +135,8 @@ function OrdersContent() {
                 <th className="p-3 font-medium">Items</th>
                 <th className="p-3 font-medium">Total</th>
                 <th className="p-3 font-medium">Method</th>
-                <th className="p-3 font-medium">Pay Status</th>
+                    <th className="p-3 font-medium">Txn ID</th>
+                    <th className="p-3 font-medium">Pay Status</th>
                 <th className="p-3 font-medium">Status</th>
                 <th className="p-3 font-medium">Date</th>
                 <th className="p-3 font-medium">Actions</th>
@@ -155,6 +157,13 @@ function OrdersContent() {
                   </td>
                   <td className="p-3">PKR {(order.finalAmount ?? order.totalAmount).toLocaleString()}</td>
                   <td className="p-3 uppercase text-xs font-bold text-muted-foreground">{order.paymentMethod}</td>
+                  <td className="p-3 text-xs">
+                    { (order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa') ? (
+                      <div className="font-mono text-sm break-words max-w-[140px]">{order.paymentTransactionId || '—'}</div>
+                    ) : (
+                      <div className="text-muted-foreground text-xs">N/A</div>
+                    ) }
+                  </td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded text-xs ${
                       order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 
