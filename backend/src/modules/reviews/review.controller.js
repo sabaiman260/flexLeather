@@ -9,20 +9,23 @@ import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 //-------------------- CREATE REVIEW --------------------//
 const createReview = asyncHandler(async (req, res) => {
     const { product, rating, comment } = req.body;
-    const user = req.user._id;
+    // Support guest reviews: if req.user exists treat as logged-in user, otherwise guest
+    const isGuest = !req.user;
+    const userId = req.user ? req.user._id : null;
 
     const productExists = await Product.findById(product);
     if (!productExists) throw new ApiError(404, "Product not found");
 
-    // ✅ Validate: User must have at least one paid & delivered order before reviewing
-    const eligibleOrder = await Order.findOne({
-        buyer: user,
-        orderStatus: 'delivered',
-        paymentStatus: 'paid'
-    });
-    
-    if (!eligibleOrder) {
-        throw new ApiError(403, "You can only submit reviews for products from paid and delivered orders");
+    // For logged-in users only: ensure they have at least one paid & delivered order
+    if (!isGuest) {
+        const eligibleOrder = await Order.findOne({
+            buyer: userId,
+            orderStatus: 'delivered',
+            paymentStatus: 'paid'
+        });
+        if (!eligibleOrder) {
+            throw new ApiError(403, "You can only submit reviews for products from paid and delivered orders");
+        }
     }
 
     let images = [];
@@ -33,14 +36,27 @@ const createReview = asyncHandler(async (req, res) => {
         }
     }
 
-    const review = await Review.create({
-        user,
+    const reviewPayload = {
+        user: userId,
         product,
         rating,
         comment,
         images,
-        isApproved: false // admin will approve
-    });
+        isApproved: false, // admin will approve
+        isGuest: isGuest
+    };
+
+    // If guest, persist provided guest details (fullName, email) when available
+    if (isGuest) {
+        const { fullName, email } = req.body;
+        if (fullName) reviewPayload.guestDetails = reviewPayload.guestDetails || {};
+        if (email) reviewPayload.guestDetails = { ...(reviewPayload.guestDetails || {}), email };
+        if (fullName) reviewPayload.guestDetails = { ...(reviewPayload.guestDetails || {}), fullName };
+        // ensure user is explicitly null for guest reviews
+        reviewPayload.user = null;
+    }
+
+    const review = await Review.create(reviewPayload);
 
     return res.status(201).json(new ApiResponse(201, review, "Review created successfully"));
 });

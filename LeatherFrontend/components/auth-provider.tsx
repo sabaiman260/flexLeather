@@ -47,25 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchMe = async () => {
-    const token = localStorage.getItem('accessToken')
-    if (!token) {
-      setUser(null)
-      setIsLoading(false)
-      return
-    }
-
     try {
+      // Always attempt to fetch current user. The backend may authenticate via httpOnly cookies.
       const res = await apiFetch('/api/v1/auth/me')
-      if (res?.data?.user) setUser(res.data.user)
-      else {
-        localStorage.removeItem('accessToken')
+      if (res?.data?.user) {
+        setUser(res.data.user)
+      } else {
+        try { localStorage.removeItem('accessToken') } catch {}
         setUser(null)
       }
     } catch (error: any) {
         // Treat 401/400 and connection failures (status 0) as expected: clear local session
         if (error.status === 401 || error.status === 400 || error.status === 0) {
-          localStorage.removeItem('accessToken')
-          setUser(null)
+        try { localStorage.removeItem('accessToken') } catch {}
+        setUser(null)
         } else {
           // Only log truly unexpected errors
           console.error('Auth fetch error:', error)
@@ -78,12 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check auth & refresh token automatically
   const checkAuth = async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
-    if (!token) {
-      setUser(null)
-      setIsLoading(false)
-      return
-    }
+
+    // Attempt to load current user regardless of localStorage token presence
 
     // Add timeout to prevent infinite loading
     const timeout = setTimeout(() => {
@@ -102,12 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth()
     // Periodically refresh session every 5 minutes (only if token exists and is valid)
     const interval = setInterval(() => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
-      if (token) {
-        // Only attempt refresh if we have a user (meaning token was previously valid)
-        if (user) {
-          fetchMe()
-        }
+      // Periodically re-check session; this will use cookies if available.
+      if (typeof window !== 'undefined') {
+        fetchMe()
       }
     }, 5 * 60 * 1000)
 
@@ -115,7 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   const login = (token: string, userData: User) => {
-    localStorage.setItem('accessToken', token)
+    try {
+      if (token) localStorage.setItem('accessToken', token)
+    } catch {}
     setUser(userData)
     setIsLoading(false)
   }

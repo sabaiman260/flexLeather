@@ -79,16 +79,60 @@ const registerUser = asyncHandler(async (req, res) => {
     let profileSignedUrl = null;
 
     // 2️⃣ Upload profile image (optional)
-    if (req.file) {
-        try {
-            const uploadResult = await S3UploadHelper.uploadFile(req.file, "user-profile");
-            if (uploadResult?.key) {
-                profileImageKey = uploadResult.key;
-                profileSignedUrl = await S3UploadHelper.getSignedUrl(uploadResult.key);
-            }
-        } catch (error) {
-            throw new ApiError(500, "Error uploading profile image");
+    try {
+        // Support single-file (`req.file`) and multiple files (`req.files` or object of arrays)
+        let filesToUpload = [];
+        if (Array.isArray(req.files) && req.files.length > 0) {
+            filesToUpload = req.files;
+        } else if (req.files && typeof req.files === 'object') {
+            // could be object of arrays or single-key
+            filesToUpload = Object.values(req.files).flat();
+        } else if (req.file) {
+            filesToUpload = [req.file];
         }
+
+        if (filesToUpload.length > 0) {
+            // If multiple files passed, reuse uploadMultipleFiles; otherwise upload single file
+            if (filesToUpload.length === 1) {
+                const uploadResult = await S3UploadHelper.uploadFile(filesToUpload[0], "user-profile");
+                if (uploadResult?.key) {
+                    profileImageKey = uploadResult.key;
+                    try {
+                        profileSignedUrl = await S3UploadHelper.getSignedUrl(uploadResult.key);
+                    } catch (err) {
+                        console.error('[auth:register] failed to generate signed URL for profile image', err?.message || err);
+                    }
+                }
+            } else {
+                try {
+                    const uploads = await S3UploadHelper.uploadMultipleFiles(filesToUpload, 'user-profile');
+                    if (Array.isArray(uploads) && uploads.length > 0) {
+                        // take first as profile image
+                        profileImageKey = uploads[0]?.key || null;
+                        try {
+                            profileSignedUrl = profileImageKey ? await S3UploadHelper.getSignedUrl(profileImageKey) : null;
+                        } catch (err) {
+                            console.error('[auth:register] failed to generate signed URL for profile image', err?.message || err);
+                        }
+                    }
+                } catch (err) {
+                    // Let fallthrough handle logging
+                    throw err;
+                }
+            }
+        }
+    } catch (error) {
+        // Do NOT fail registration due to profile image issues.
+        // Log detailed error so we don't silently swallow real upload problems.
+        console.error('[auth:register] profile image upload failed:', {
+            message: error?.message,
+            name: error?.name,
+            stack: error?.stack,
+            fileKeys: req.file ? [req.file?.originalname] : (req.files ? (Array.isArray(req.files) ? req.files.map(f=>f.originalname) : Object.values(req.files).flat().map(f=>f.originalname)) : []),
+        });
+        // keep profileImageKey null and continue registration
+        profileImageKey = null;
+        profileSignedUrl = null;
     }
 
     // 3️⃣ Create user (NOT verified)

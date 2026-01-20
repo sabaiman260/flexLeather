@@ -67,6 +67,21 @@ const orderSchema = new mongoose.Schema({
         default: "pending"
     },
 
+    // Store last manual payment transaction/reference id (optional)
+    paymentTransactionId: { type: String, default: null },
+
+    // Track whether we have sent a payment confirmation email to the customer
+    paymentConfirmationSent: {
+        type: Boolean,
+        default: false
+    },
+
+    // Track whether we have sent the order confirmation email (e.g., for COD)
+    orderConfirmationSent: {
+        type: Boolean,
+        default: false
+    },
+
     orderStatus: {
         type: String,
         enum: ["pending", "processing", "shipped", "delivered", "cancelled"],

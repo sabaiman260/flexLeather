@@ -83,9 +83,10 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     throw error
   }
 
-  // Handle 401 Unauthorized - Token Refresh (only if we have a token)
+  // Handle 401 Unauthorized - Token Refresh
   const hasToken = typeof window !== 'undefined' && localStorage.getItem('accessToken')
-  if (res.status === 401 && hasToken && !path.includes('/auth/refresh-token') && !path.includes('/auth/login') && !path.includes('/auth/register')) {
+  // Attempt refresh on 401 regardless of localStorage token (to support httpOnly cookie auth)
+  if (res.status === 401 && !path.includes('/auth/refresh-token') && !path.includes('/auth/login') && !path.includes('/auth/register')) {
     // Queue requests while refreshing
     await new Promise<void>((resolve) => {
       refreshQueue.push(resolve)

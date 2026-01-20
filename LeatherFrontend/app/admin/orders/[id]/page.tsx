@@ -46,6 +46,7 @@ type Order = {
   paymentMethod: string
   paymentStatus: string
   orderStatus: string
+  paymentTransactionId?: string | null
   createdAt: string
 }
 
@@ -231,6 +232,13 @@ function OrderDetailsContent() {
                 <p className="text-xs text-muted-foreground mb-1">Payment Method</p>
                 <p className="font-medium uppercase">{order.paymentMethod}</p>
               </div>
+              {/* Show transaction/reference id for manual methods */}
+              {(order.paymentMethod === 'jazzcash' || order.paymentMethod === 'easypaisa') && (
+                <div className="pt-2">
+                  <p className="text-xs text-muted-foreground mb-1">Transaction / Reference ID</p>
+                  <p className="font-medium">{order.paymentTransactionId || 'Not provided'}</p>
+                </div>
+              )}
             </div>
           </div>
 

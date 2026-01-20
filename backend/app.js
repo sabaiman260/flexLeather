@@ -72,6 +72,7 @@ import orderRouter from "./src/modules/order/order.routes.js";
 import paymentRouter from "./src/modules/payment/payment.routes.js";
 import transactionRouter from "./src/modules/transaction/transaction.routes.js";
 import adminRouter from "./src/modules/admin/admin.routes.js";
+import cloudinaryRouter from "./src/modules/cloudinary/cloudinary.route.js";
 
 const app = express();
 
@@ -105,6 +106,7 @@ app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/transactions", transactionRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use('/api/v1/cloudinary', cloudinaryRouter);
 
 /* =======================
    HEALTH CHECK
