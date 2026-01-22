@@ -63,15 +63,33 @@ const createReview = asyncHandler(async (req, res) => {
 
 //-------------------- GET REVIEWS FOR PRODUCT --------------------//
 const getReviews = asyncHandler(async (req, res) => {
-    const reviews = await Review.find({ product: req.params.productId, isApproved: true })
-        .populate("user", "userName profileImage");
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 0; // 0 => no limit (return all)
+
+    const filter = { product: req.params.productId, isApproved: true };
+    const total = await Review.countDocuments(filter);
+
+    let query = Review.find(filter).populate("user", "userName profileImage");
+    if (limit > 0) {
+        const skip = (page - 1) * limit;
+        query = query.skip(skip).limit(limit);
+    }
+
+    const reviews = await query.exec();
 
     const withUrls = await Promise.all(reviews.map(async (r) => {
-        const imageUrls = await Promise.all((r.images || []).map(key => S3UploadHelper.getSignedUrl(key)));
+        const imageUrls = await Promise.all((r.images || []).map(async (key) => {
+            try {
+                return await S3UploadHelper.getSignedUrl(key);
+            } catch (err) {
+                console.error('Failed to get signed url for review image', err);
+                return key;
+            }
+        }));
         return { ...r._doc, imageUrls };
     }));
 
-    return res.status(200).json(new ApiResponse(200, withUrls, "Reviews fetched successfully"));
+    return res.status(200).json(new ApiResponse(200, { reviews: withUrls, total, page, limit }, "Reviews fetched successfully"));
 });
 
 //-------------------- APPROVE REVIEW --------------------//

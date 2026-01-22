@@ -205,7 +205,7 @@ export default function ShopPage() {
                       href={`/products/${p.id}`}
                       className="group"
                     >
-                      <div className="relative aspect-square bg-muted overflow-hidden mb-4">
+                      <div className="relative aspect-square bg-muted overflow-hidden mb-4 p-0 flex items-center justify-center">
                         <Image
                           src={p.image}
                           alt={p.name}

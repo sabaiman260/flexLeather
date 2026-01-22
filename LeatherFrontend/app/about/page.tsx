@@ -60,8 +60,7 @@ export default function AboutPage() {
 
             <div>
               <h4 className="text-lg font-serif font-light mb-3">Our Promise</h4>
-              <p className="text-sm opacity-80">If you’re not satisfied, our support team will help you with repairs
-                or a fair solution — we believe in craftsmanship that stands behind its products.</p>
+              <p className="text-sm opacity-80">If you’re not satisfied, our support team will help you with fair solution — we believe in craftsmanship that stands behind its products.</p>
             </div>
           </div>
         </div>

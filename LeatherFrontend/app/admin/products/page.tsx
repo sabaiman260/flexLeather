@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { apiFetch, API_BASE_URL, BackendProduct } from '@/lib/api'
 import { X, Upload, Plus, Pencil, Trash2 } from 'lucide-react'
 
@@ -231,13 +232,9 @@ export default function AdminProductsPage() {
               {products.map(p => (
                 <tr key={p._id} className="hover:bg-muted/50 transition">
                   <td className="p-4">
-                    <div className="relative w-12 h-12 bg-gray-100 rounded overflow-hidden">
-                      {p.imageUrls?.[0] ? (
-                        <img src={p.imageUrls[0]} alt={p.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <img src="/placeholder.jpg" alt="placeholder" className="w-full h-full object-cover" />
-                      )}
-                    </div>
+                      <div className="relative w-12 h-12 bg-gray-100 rounded overflow-hidden p-1 flex items-center justify-center">
+                        <Image src={p.imageUrls?.[0] || '/placeholder.jpg'} alt={p.name} fill className="object-contain" />
+                      </div>
                   </td>
                   <td className="p-4 font-medium">{p.name}</td>
                   <td className="p-4 text-muted-foreground">

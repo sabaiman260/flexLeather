@@ -39,6 +39,11 @@ export default function ProductDetail() {
   const productId = params.id as string
   const [product, setProduct] = useState<Product | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [page, setPage] = useState<number>(1)
+  const [limit] = useState<number>(5)
+  const [totalReviews, setTotalReviews] = useState<number>(0)
+  const [loadingMore, setLoadingMore] = useState<boolean>(false)
+  const [loadingInitial, setLoadingInitial] = useState<boolean>(true)
   const [quantity, setQuantity] = useState(1)
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [selectedSize, setSelectedSize] = useState<string>('')
@@ -53,6 +58,8 @@ export default function ProductDetail() {
   const [reviewImages, setReviewImages] = useState<FileList | null>(null)
   const [eligibleOrders, setEligibleOrders] = useState<any[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState<string>('')
+  const [guestFullName, setGuestFullName] = useState<string>('')
+  const [guestEmail, setGuestEmail] = useState<string>('')
 
   useEffect(() => {
     (async () => {
@@ -74,9 +81,23 @@ export default function ProductDetail() {
         setProduct(mapped)
       } catch {}
       try {
-        const res2 = await apiFetch(`/api/v1/reviews/product/${productId}`)
-        setReviews(res2?.data || [])
-      } catch {}
+        setLoadingInitial(true)
+        const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=1&limit=${limit}`, {
+          method: 'GET',
+          credentials: 'include'
+        })
+        if (resp.ok) {
+          const data = await resp.json().catch(() => ({}))
+          const payload = data?.data || {}
+          setReviews(payload.reviews || [])
+          setTotalReviews(payload.total || 0)
+          setPage(1)
+        }
+      } catch (err) {
+        // silently ignore
+      } finally {
+        setLoadingInitial(false)
+      }
 
       // Fetch eligible orders for review - ONLY for logged-in users
       const token = localStorage.getItem('accessToken')
@@ -146,24 +167,24 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Product Images */}
             <div>
-              <div className="relative overflow-hidden bg-muted aspect-square mb-4">
+              <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-1 flex items-center justify-center">
                 <Image
                   src={product.images[0]}
                   alt={product.name}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                   loading="eager"
                 />
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {product.images.slice(0,4).map((img, i) => (
-                  <div key={i} className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75">
+                  <div key={i} className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 p-1 flex items-center justify-center">
                     <Image
                       src={img}
                       alt={`${product.name} view ${i+1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   </div>
                 ))}
@@ -177,7 +198,7 @@ export default function ProductDetail() {
                 <h1 className="text-3xl md:text-4xl font-serif font-light tracking-wide mb-4">
                   {product.name}
                 </h1>
-                <p className="text-2xl font-serif">${product.price.toFixed(2)}</p>
+                <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
               </div>
 
               <p className="text-sm leading-relaxed mb-8 opacity-80">
@@ -299,9 +320,11 @@ export default function ProductDetail() {
               {/* Reviews */}
               <div className="mt-12 border-t border-border pt-8">
                 <h3 className="text-lg font-serif mb-4">Customer Reviews</h3>
-                {reviews.length === 0 && (
+                {loadingInitial ? (
+                  <p className="text-sm opacity-70">Loading reviews...</p>
+                ) : reviews.length === 0 ? (
                   <p className="text-sm opacity-70">No reviews yet.</p>
-                )}
+                ) : (
                 <div className="space-y-6">
                   {reviews.map(r => (
                     <div key={r._id} className="border border-border p-4">
@@ -324,15 +347,62 @@ export default function ProductDetail() {
                     </div>
                   ))}
                 </div>
+                )}
+
+                {/* Load More */}
+                {(!loadingInitial && reviews.length > 0 && reviews.length < totalReviews) && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={async () => {
+                        const nextPage = page + 1
+                        setLoadingMore(true)
+                        try {
+                          const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=${nextPage}&limit=${limit}`, {
+                            method: 'GET',
+                            credentials: 'include'
+                          })
+                          if (resp.ok) {
+                            const data = await resp.json().catch(() => ({}))
+                            const payload = data?.data || {}
+                            const more: Review[] = payload.reviews || []
+                            setReviews(prev => [...prev, ...more])
+                            setPage(nextPage)
+                            setTotalReviews(payload.total || totalReviews)
+                          }
+                        } catch (err) {
+                          console.error('Failed to load more reviews', err)
+                        } finally {
+                          setLoadingMore(false)
+                        }
+                      }}
+                      className="px-4 py-2 border border-border rounded"
+                      aria-label="Load more reviews"
+                    >
+                      {loadingMore ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                          Loading...
+                        </span>
+                      ) : (
+                        'Load More'
+                      )}
+                    </button>
+                  </div>
+                )}
 
                 <h4 className="text-md font-serif mt-8 mb-2">Write a review</h4>
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault()
 
-                    if (!selectedOrderId) {
-                      toast.error('Please select an order to review')
-                      return
+                    const token = localStorage.getItem('accessToken')
+
+                    // If logged-in, require order selection (existing behavior)
+                    if (token) {
+                      if (!selectedOrderId) {
+                        toast.error('Please select an order to review')
+                        return
+                      }
                     }
 
                     if (reviewComment.length < 5) {
@@ -342,9 +412,23 @@ export default function ProductDetail() {
 
                     const fd = new FormData()
                     fd.append('product', productId)
-                    fd.append('orderId', selectedOrderId)
+                    // Append orderId: for logged-in users use selectedOrderId (required),
+                    // for guests send a harmless placeholder so backend validation (which
+                    // currently requires an orderId) passes — controller treats guests
+                    // differently and will ignore order checks.
+                    if (token) {
+                      if (selectedOrderId) fd.append('orderId', selectedOrderId)
+                    } else {
+                      fd.append('orderId', 'guest')
+                    }
                     fd.append('rating', String(reviewRating))
                     fd.append('comment', reviewComment)
+
+                    // If guest, optionally include guest details
+                    if (!token) {
+                      if (guestFullName) fd.append('fullName', guestFullName)
+                      if (guestEmail) fd.append('email', guestEmail)
+                    }
 
                     if (reviewImages) {
                       for (let i = 0; i < reviewImages.length; i++) {
@@ -369,6 +453,8 @@ export default function ProductDetail() {
                       setReviewRating(5)
                       setReviewImages(null)
                       setSelectedOrderId('')
+                      setGuestFullName('')
+                      setGuestEmail('')
                       // Reset file input
                       const fileInput = document.getElementById('review-images') as HTMLInputElement
                       if (fileInput) fileInput.value = ''
@@ -378,7 +464,8 @@ export default function ProductDetail() {
                   }}
                   className="space-y-3"
                 >
-                  {eligibleOrders.length > 0 && (
+                  {/** Show order select only to logged-in users with eligible orders */}
+                  {localStorage.getItem('accessToken') && eligibleOrders.length > 0 && (
                     <div>
                       <label className="block text-sm mb-2">Select Order to Review</label>
                       <select
@@ -397,9 +484,26 @@ export default function ProductDetail() {
                     </div>
                   )}
 
-                  {eligibleOrders.length === 0 && (
+                  {/** If logged-in but no eligible orders, show informational message (unchanged) */}
+                  {localStorage.getItem('accessToken') && eligibleOrders.length === 0 && (
                     <div className="text-sm text-muted-foreground p-3 bg-muted rounded">
                       No eligible orders found. You can only review products from orders that are paid and delivered.
+                    </div>
+                  )}
+
+                  {/** For guests, allow entering name/email but do not block submission */}
+                  {!localStorage.getItem('accessToken') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Input
+                        placeholder="Your name (optional)"
+                        value={guestFullName}
+                        onChange={(e) => setGuestFullName(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Your email (optional)"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                      />
                     </div>
                   )}
 
@@ -433,8 +537,7 @@ export default function ProductDetail() {
               {/* Trust Badges */}
               <div className="mt-12 space-y-3 text-xs opacity-75 border-t border-border pt-8">
                 <p>✓ Genuine leather, handcrafted quality</p>
-                <p>✓ Free shipping on orders over PKR 25,000</p>
-                <p>✓ 30-day money-back guarantee</p>
+                <p>✓ Free shipping on orders over PKR 15,000</p>
                 <p>✓ Secure checkout</p>
               </div>
             </div>
