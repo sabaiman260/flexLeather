@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { Suspense } from 'react'
+import Header from '@/components/header'
 import CartProvider from '@/components/cart-context'
 import { AuthProvider } from '@/components/auth-provider'
 import { Toaster } from '@/components/ui/sonner'
@@ -30,7 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${playfair.variable} font-sans antialiased`}>
         <AuthProvider>
           <CartProvider>
-            {children}
+            <Suspense fallback={null}>
+              {children}
+            </Suspense>
             <Toaster />
           </CartProvider>
         </AuthProvider>

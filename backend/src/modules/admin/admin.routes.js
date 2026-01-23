@@ -12,7 +12,7 @@ const {
     getPendingReviews,
     getDashboardStats,
     getSalesReport
-} = require("./admin.controller.js");
+} = require("./admin.controller.cjs");
 
 const adminRouter = Router();
 
