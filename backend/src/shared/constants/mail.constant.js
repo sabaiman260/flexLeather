@@ -44,7 +44,7 @@
 // export { userVerificationMailBody, userForgotPasswordMailBody };
 
 
-import { mailGenerator } from "../helpers/mail.helper.js"; // fixed import path
+const { mailGenerator } = require("../helpers/mail.helper.js"); // fixed import path
 
 /**
  * Registration Verification Email HTML
@@ -190,4 +190,4 @@ const paymentConfirmationMailBody = (paymentDetails) => {
     return mailGenerator.generate(email);
 };
 
-export { userVerificationMailBody, userForgotPasswordMailBody, orderConfirmationMailBody, paymentConfirmationMailBody };
+module.exports = { userVerificationMailBody, userForgotPasswordMailBody, orderConfirmationMailBody, paymentConfirmationMailBody };

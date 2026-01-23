@@ -1,9 +1,9 @@
-import Router from "express";
-import { upload } from "../../core/middleware/multer.js";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
-import { isBuyer } from "../../core/middleware/isBuyer.js";
+const { Router } = require("express");
+const { upload } = require("../../core/middleware/multer.js");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
+const { isBuyer } = require("../../core/middleware/isBuyer.js");
 
-import {
+const {
     getBuyerProfile,
     updateBuyerProfile,
     deleteBuyerProfile,
@@ -11,7 +11,7 @@ import {
     deleteBuyerProfileImage,
     getMyOrders,
     getMyTransactions
-} from "./buyer.controller.js";
+} = require("./buyer.controller.js");
 
 const buyerRouter = Router();
 
@@ -33,4 +33,4 @@ buyerRouter.get("/orders", getMyOrders);
 // Transactions
 buyerRouter.get("/transactions", getMyTransactions);
 
-export default buyerRouter;
+module.exports = buyerRouter;

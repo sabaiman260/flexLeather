@@ -1,7 +1,7 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import Category from "../../models/Category.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const Category = require("../../models/Category.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
 
 // Get all categories
 const getAllCategories = asyncHandler(async (_req, res) => {
@@ -67,7 +67,7 @@ const searchCategories = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, categories, "Categories fetched"));
 });
 
-export {
+module.exports = {
   getAllCategories,
   createCategory,
   updateCategory,

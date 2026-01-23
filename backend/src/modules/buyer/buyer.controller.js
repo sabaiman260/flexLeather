@@ -1,13 +1,13 @@
-import User from "../../models/user.model.js";
-import Order from "../../models/order/order.model.js";
-import Transaction from "../../models/transaction/transaction.model.js";
-import { ApiError } from "../../utils/ApiError.js";
-import { ApiResponse } from "../../utils/ApiResponse.js";
-import asyncHandler from "../../utils/async-handler.js";
-import S3UploadHelper from "../../utils/S3UploadHelper.js";
+const User = require("../../models/user.model.js");
+const Order = require("../../models/order/order.model.js");
+const Transaction = require("../../models/transaction/transaction.model.js");
+const { ApiError } = require("../../utils/ApiError.js");
+const { ApiResponse } = require("../../utils/ApiResponse.js");
+const asyncHandler = require("../../utils/async-handler.js");
+const S3UploadHelper = require("../../utils/S3UploadHelper.js");
 
 // GET ALL BUYERS
-export const getAllBuyers = asyncHandler(async (req, res) => {
+const getAllBuyers = asyncHandler(async (req, res) => {
   const buyers = await User.find();
   return res
     .status(200)
@@ -15,7 +15,7 @@ export const getAllBuyers = asyncHandler(async (req, res) => {
 });
 
 // GET BUYER BY ID
-export const getBuyer = asyncHandler(async (req, res) => {
+const getBuyer = asyncHandler(async (req, res) => {
   const buyer = await User.findById(req.params.id);
   if (!buyer) throw new ApiError(404, "Buyer not found");
 
@@ -23,13 +23,13 @@ export const getBuyer = asyncHandler(async (req, res) => {
 });
 
 // GET MY PROFILE
-export const getProfile = asyncHandler(async (req, res) => {
+const getProfile = asyncHandler(async (req, res) => {
   const buyer = await User.findById(req.user._id);
   return res.status(200).json(new ApiResponse(200, buyer));
 });
 
 // UPDATE PROFILE
-export const updateProfile = asyncHandler(async (req, res) => {
+const updateProfile = asyncHandler(async (req, res) => {
   const updates = req.body;
 
   const buyer = await User.findByIdAndUpdate(
@@ -44,7 +44,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
 });
 
 // DELETE PROFILE
-export const deleteProfile = asyncHandler(async (req, res) => {
+const deleteProfile = asyncHandler(async (req, res) => {
   await Buyer.findByIdAndDelete(req.user._id);
 
   return res
@@ -53,7 +53,7 @@ export const deleteProfile = asyncHandler(async (req, res) => {
 });
 
 // UPDATE PROFILE IMAGE
-export const updateProfileImage = asyncHandler(async (req, res) => {
+const updateProfileImage = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "Image is required");
 
   const upload = await S3UploadHelper.uploadFile(req.file);
@@ -70,7 +70,7 @@ export const updateProfileImage = asyncHandler(async (req, res) => {
 });
 
 // DELETE PROFILE IMAGE
-export const deleteProfileImage = asyncHandler(async (req, res) => {
+const deleteProfileImage = asyncHandler(async (req, res) => {
   const buyer = await User.findById(req.user._id);
 
   buyer.profileImage = null;
@@ -82,7 +82,7 @@ export const deleteProfileImage = asyncHandler(async (req, res) => {
 });
 
 // GET MY ORDERS
-export const getMyOrders = asyncHandler(async (req, res) => {
+const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ buyer: req.user._id })
     .populate("items.product");
 
@@ -92,10 +92,29 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 });
 
 // GET MY TRANSACTIONS
-export const getMyTransactions = asyncHandler(async (req, res) => {
+const getMyTransactions = asyncHandler(async (req, res) => {
   const transactions = await Transaction.find({ buyer: req.user._id });
 
   return res
     .status(200)
     .json(new ApiResponse(200, transactions));
 });
+
+module.exports = {
+  getAllBuyers,
+  getBuyer,
+  getProfile,
+  updateProfile,
+  deleteProfile,
+  updateProfileImage,
+  deleteProfileImage,
+  getMyOrders,
+  getMyTransactions,
+
+  // Aliases expected by routes
+  getBuyerProfile: getProfile,
+  updateBuyerProfile: updateProfile,
+  deleteBuyerProfile: deleteProfile,
+  updateBuyerProfileImage: updateProfileImage,
+  deleteBuyerProfileImage: deleteProfileImage
+};

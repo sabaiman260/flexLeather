@@ -1,4 +1,4 @@
-import { ApiError } from "../../../core/utils/api-error.js";
+const { ApiError } = require("../../../core/utils/api-error.js");
 
 /**
  * Create EasyPaisa Payment (API Flow)
@@ -7,7 +7,7 @@ import { ApiError } from "../../../core/utils/api-error.js";
  * @param {String} mobileNumber
  * @returns {Object} { type: 'api', message, transactionId }
  */
-export const createEasyPaisaPayment = async (order, amount, mobileNumber) => {
+const createEasyPaisaPayment = async (order, amount, mobileNumber) => {
     // Requirements: Backend API-based payment initiation
     const storeId = process.env.EASYPAISA_STORE_ID;
     const hashKey = process.env.EASYPAISA_HASH_KEY; // Not used in this mock but required for real sig
@@ -61,7 +61,9 @@ export const createEasyPaisaPayment = async (order, amount, mobileNumber) => {
  * @param {Object} req 
  * @returns {Object}
  */
-export const handleEasyPaisaWebhook = async (req) => {
+const handleEasyPaisaWebhook = async (req) => {
     // Implementation would verify signature similar to others
     return { status: 'success' };
 };
+
+module.exports = { createEasyPaisaPayment, handleEasyPaisaWebhook };

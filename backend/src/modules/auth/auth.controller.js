@@ -357,38 +357,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, "Password reset successfully"));
 });
 
-module.exports = {
-    registerUser,
-    verifyUserEmail,
-    loginUser,
-    logoutUser,
-    getAccessToken,
-    forgotPasswordMail,
-    resetPassword,
-    getMe: asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
-    if (!user) throw new ApiError(404, "User not found");
 
-    let profileSignedUrl = null;
-    if (user.profileImage) {
-        try {
-            profileSignedUrl = await S3UploadHelper.getSignedUrl(user.profileImage);
-        } catch {}
-    }
-
-    return res.status(200).json(new ApiResponse(200, {
-        user: {
-            userId: user._id,
-            userName: user.userName,
-            userEmail: user.userEmail,
-            userRole: user.userRole,
-            phoneNumber: user.phoneNumber,
-            userAddress: user.userAddress,
-            userIsVerified: user.userIsVerified,
-            profileImage: profileSignedUrl
-        }
-    }, "OK"));
-});
 
 //-------------------- UPDATE CURRENT USER --------------------//
 const updateMe = asyncHandler(async (req, res) => {
@@ -432,18 +401,18 @@ const updateMe = asyncHandler(async (req, res) => {
             profileImage: profileSignedUrl
         }
     }, "Profile updated"));
-});
+})
 
-module.exports.updateMe = updateMe;
+// module.exports = updateMe;
 
 const getGoogleClientId = asyncHandler(async (_req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID || null;
     return res.status(200).json(new ApiResponse(200, { clientId }, "OK"));
 });
 
-module.exports.getGoogleClientId = getGoogleClientId;
+// module.exports = getGoogleClientId;
 
-//-------------------- GOOGLE LOGIN --------------------//
+// -------------------- GOOGLE LOGIN --------------------//
 const googleLogin = asyncHandler(async (req, res) => {
     const { idToken } = req.body || {};
     if (!idToken) throw new ApiError(400, "Google ID token is required");
@@ -524,4 +493,42 @@ const googleLogin = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, response, "Login successful"));
 });
 
-module.exports.googleLogin = googleLogin;
+// module.exports = googleLogin;
+
+
+module.exports = {
+    registerUser,
+    verifyUserEmail,
+    loginUser,
+    logoutUser,
+    getAccessToken,
+    forgotPasswordMail,
+    resetPassword,
+    googleLogin,
+    updateMe,
+    getGoogleClientId
+
+    // getMe: asyncHandler(async (req, res) => {
+    // const user = await User.findById(req.user._id);
+    // if (!user) throw new ApiError(404, "User not found");
+
+    // let profileSignedUrl = null;
+    // if (user.profileImage) {
+    //     try {
+    //         profileSignedUrl = await S3UploadHelper.getSignedUrl(user.profileImage);
+    //     } catch {}
+    // }
+
+    // return res.status(200).json(new ApiResponse(200, {
+    //     user: {
+    //         userId: user._id,
+    //         userName: user.userName,
+    //         userEmail: user.userEmail,
+    //         userRole: user.userRole,
+    //         phoneNumber: user.phoneNumber,
+    //         userAddress: user.userAddress,
+    //         userIsVerified: user.userIsVerified,
+    //         profileImage: profileSignedUrl
+    //     }
+    // }, "OK"));
+}

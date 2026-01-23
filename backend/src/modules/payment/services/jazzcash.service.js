@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+const crypto = require('crypto');
 
 /**
  * Generate JazzCash Secure Hash
@@ -25,7 +25,7 @@ const generateJazzCashHash = (data, integritySalt) => {
  * @param {Number} amount 
  * @returns {Object} { type: 'redirect', url, data }
  */
-export const createJazzCashPayment = async (order, amount) => {
+const createJazzCashPayment = async (order, amount) => {
     const merchantId = process.env.JAZZCASH_MERCHANT_ID;
     const password = process.env.JAZZCASH_PASSWORD || process.env.JAZZCASH_MERCHANT_PASSWORD;
     const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT || process.env.JAZZCASH_HASH_KEY;
@@ -78,7 +78,7 @@ export const createJazzCashPayment = async (order, amount) => {
  * @param {Object} req 
  * @returns {Object} { status, transactionId, orderId }
  */
-export const handleJazzCashWebhook = async (req) => {
+const handleJazzCashWebhook = async (req) => {
     const { pp_ResponseCode, pp_TxnRefNo, pp_BillReference, pp_SecureHash, ...data } = req.body;
     
     // 1. Validate SecureHash
@@ -118,3 +118,5 @@ export const handleJazzCashWebhook = async (req) => {
     
     return { status: 'failed', orderId: pp_BillReference };
 };
+
+module.exports = { createJazzCashPayment, handleJazzCashWebhook };

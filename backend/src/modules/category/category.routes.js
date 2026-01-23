@@ -1,16 +1,16 @@
-import Router from "express";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
-import { isAdmin } from "../../core/middleware/isAdmin.js";
-import { validate } from "../../core/middleware/validate.js";
-import { createCategorySchema, updateCategorySchema } from "../../shared/validators/category.validator.js";
+const { Router } = require("express");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
+const { isAdmin } = require("../../core/middleware/isAdmin.js");
+const { validate } = require("../../core/middleware/validate.js");
+const { createCategorySchema, updateCategorySchema } = require("../../shared/validators/category.validator.js");
 
-import {
+const {
   getAllCategories,
   createCategory,
   updateCategory,
   deleteCategory,
   searchCategories
-} from "./category.controller.js";
+} = require("./category.controller.js");
 
 const categoryRouter = Router();
 
@@ -23,4 +23,4 @@ categoryRouter.post("/create", isLoggedIn, isAdmin, validate(createCategorySchem
 categoryRouter.put("/:id", isLoggedIn, isAdmin, validate(updateCategorySchema), updateCategory);
 categoryRouter.delete("/:id", isLoggedIn, isAdmin, deleteCategory);
 
-export default categoryRouter;
+module.exports = categoryRouter;

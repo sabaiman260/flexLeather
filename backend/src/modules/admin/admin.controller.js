@@ -1,23 +1,23 @@
 // controllers/admin/admin.controller.js
 
-import User from "../../models/user.model.js";
-import Review from "../../models/Review.model.js";
-import Order from "../../models/Order.model.js";
-import Transaction from "../../models/Transaction.model.js";
-import Product from "../../models/Product.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import S3UploadHelper from "../../shared/helpers/s3Upload.js";
+const User = require("../../models/user.model.js");
+const Review = require("../../models/Review.model.js");
+const Order = require("../../models/Order.model.js");
+const Transaction = require("../../models/Transaction.model.js");
+const Product = require("../../models/Product.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const S3UploadHelper = require("../../shared/helpers/s3Upload.js");
 
 // GET ADMIN PROFILE (since only one admin)
-export const getAdminProfile = asyncHandler(async (req, res) => {
+const getAdminProfile = asyncHandler(async (req, res) => {
   const admin = await User.findById(req.user._id);
   return res.status(200).json(new ApiResponse(200, admin));
 });
 
 // UPDATE ADMIN PROFILE
-export const updateAdminProfile = asyncHandler(async (req, res) => {
+const updateAdminProfile = asyncHandler(async (req, res) => {
   const updates = req.body;
 
   const admin = await User.findByIdAndUpdate(
@@ -30,7 +30,7 @@ export const updateAdminProfile = asyncHandler(async (req, res) => {
 });
 
 // UPDATE PROFILE IMAGE
-export const updateAdminProfileImage = asyncHandler(async (req, res) => {
+const updateAdminProfileImage = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "Image is required");
 
   const upload = await S3UploadHelper.uploadFile(req.file);
@@ -45,7 +45,7 @@ export const updateAdminProfileImage = asyncHandler(async (req, res) => {
 });
 
 // DELETE PROFILE IMAGE
-export const deleteAdminProfileImage = asyncHandler(async (req, res) => {
+const deleteAdminProfileImage = asyncHandler(async (req, res) => {
   const admin = await User.findById(req.user._id);
 
   admin.profileImage = null;
@@ -55,7 +55,7 @@ export const deleteAdminProfileImage = asyncHandler(async (req, res) => {
 });
 
 // TOGGLE BUYER STATUS (Block/Unblock)
-export const toggleBuyerStatus = asyncHandler(async (req, res) => {
+const toggleBuyerStatus = asyncHandler(async (req, res) => {
   const buyer = await User.findById(req.params.id);
   if (!buyer) throw new ApiError(404, "Buyer not found");
 
@@ -68,7 +68,7 @@ export const toggleBuyerStatus = asyncHandler(async (req, res) => {
 });
 
 // GET PENDING REVIEWS
-export const getPendingReviews = asyncHandler(async (req, res) => {
+const getPendingReviews = asyncHandler(async (req, res) => {
   const reviews = await Review.find({ isApproved: false })
     .populate("user", "userName profileImage")
     .populate("product", "name image");
@@ -121,7 +121,7 @@ export const getPendingReviews = asyncHandler(async (req, res) => {
 });
 
 // DASHBOARD STATS
-export const getDashboardStats = asyncHandler(async (req, res) => {
+const getDashboardStats = asyncHandler(async (req, res) => {
   const totalOrders = await Order.countDocuments();
   const totalBuyers = await User.countDocuments({ role: "buyer" });
   const totalTransactions = await Transaction.countDocuments();
@@ -155,7 +155,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
 });
 
 // SALES REPORT (daily or monthly)
-export const getSalesReport = asyncHandler(async (req, res) => {
+const getSalesReport = asyncHandler(async (req, res) => {
   const range = (req.query.range || "daily").toString();
   const now = new Date();
   let startDate;
@@ -212,3 +212,14 @@ export const getSalesReport = asyncHandler(async (req, res) => {
       new ApiResponse(200, { range, startDate, results }, "Sales report loaded")
     );
 });
+
+module.exports = {
+  getAdminProfile,
+  updateAdminProfile,
+  updateAdminProfileImage,
+  deleteAdminProfileImage,
+  toggleBuyerStatus,
+  getPendingReviews,
+  getDashboardStats,
+  getSalesReport
+};

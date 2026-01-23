@@ -1,9 +1,9 @@
-import Router from "express";
-import { upload } from "../../core/middleware/multer.js";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
-import { isAdmin } from "../../core/middleware/isAdmin.js";
+const { Router } = require("express");
+const { upload } = require("../../core/middleware/multer.js");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
+const { isAdmin } = require("../../core/middleware/isAdmin.js");
 
-import {
+const {
     getAdminProfile,
     updateAdminProfile,
     updateAdminProfileImage,
@@ -12,7 +12,7 @@ import {
     getPendingReviews,
     getDashboardStats,
     getSalesReport
-} from "./admin.controller.js";
+} = require("./admin.controller.js");
 
 const adminRouter = Router();
 
@@ -37,4 +37,4 @@ adminRouter.get("/reviews/pending", getPendingReviews);
 adminRouter.get("/dashboard/stats", getDashboardStats);
 adminRouter.get("/dashboard/reports/sales", getSalesReport);
 
-export default adminRouter;
+module.exports = adminRouter;

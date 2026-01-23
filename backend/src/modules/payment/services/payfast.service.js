@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+const crypto = require('crypto');
 
 /**
  * Generate PayFast Signature
@@ -30,7 +30,7 @@ const generatePayFastSignature = (data, passphrase) => {
  * @param {Number} amount 
  * @returns {Object} { type: 'redirect', url, data }
  */
-export const createPayFastPayment = async (order, amount) => {
+const createPayFastPayment = async (order, amount) => {
     // PayFast API-based integration is disabled for now. Return manual instructions
     // so the frontend can show merchant details and ask the customer to provide
     // a transaction/reference ID. To re-enable PayFast redirect flow, restore
@@ -53,7 +53,7 @@ export const createPayFastPayment = async (order, amount) => {
  * @param {Object} req 
  * @returns {Object} { status, transactionId, orderId }
  */
-export const handlePayFastWebhook = async (req) => {
+const handlePayFastWebhook = async (req) => {
     const { m_payment_id, pf_payment_id, payment_status, signature, ...data } = req.body;
     
     // 1. Validate signature
@@ -130,3 +130,5 @@ export const handlePayFastWebhook = async (req) => {
     
     return { status: 'failed', orderId: m_payment_id };
 };
+
+module.exports = { createPayFastPayment, handlePayFastWebhook };
