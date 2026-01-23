@@ -1,5 +1,5 @@
-import { ApiError } from "../utils/api-error.js";
-import { asyncHandler } from "../utils/async-handler.js";
+const { ApiError } = require("../utils/api-error.js");
+const { asyncHandler } = require("../utils/async-handler.js");
 
 const formatZodErrors = (zodErrors) =>
     (zodErrors || []).map((err) => ({ field: err.path.join("."), message: err.message }));
@@ -70,4 +70,4 @@ const validate = (schema) =>
         }
     });
 
-export { validate };
+module.exports = { validate };

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema(
   {
@@ -21,5 +21,4 @@ categorySchema.pre("save", function (next) {
   next();
 });
 
-export default mongoose.models.Category ||
-  mongoose.model("Category", categorySchema);
+module.exports = mongoose.models.Category || mongoose.model("Category", categorySchema);

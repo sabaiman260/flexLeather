@@ -1,10 +1,10 @@
-import Router from "express";
-import { upload } from "../../core/middleware/multer.js";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
-import { isAdmin } from "../../core/middleware/isAdmin.js";
-import { validate } from "../../core/middleware/validate.js";
-import { createProductSchema, updateProductSchema } from "../../shared/validators/product.validator.js";
-import {
+const { Router } = require("express");
+const { upload } = require("../../core/middleware/multer.js");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
+const { isAdmin } = require("../../core/middleware/isAdmin.js");
+const { validate } = require("../../core/middleware/validate.js");
+const { createProductSchema, updateProductSchema } = require("../../shared/validators/product.validator.js");
+const {
   getAllProducts,
   getProductsByCategoryId,
   createProduct,
@@ -12,7 +12,7 @@ import {
   deleteProduct,
   getProductDetail,
   searchProducts,
-} from "./product.controller.js";
+} = require("./product.controller.js");
 
 const productRouter = Router();
 
@@ -43,4 +43,4 @@ productRouter.put(
 
 productRouter.delete("/delete/:id", isLoggedIn, isAdmin, deleteProduct);
 
-export default productRouter;
+module.exports = productRouter;

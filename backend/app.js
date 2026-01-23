@@ -57,22 +57,22 @@
 // app.use(errorHandler)
 
 // export default app
-import express from "express";
-import "dotenv/config";
-import cors from "cors";
-import cookieParser from "cookie-parser";
+const express = require("express");
+require("dotenv").config();
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
-import { errorHandler } from "./src/core/middleware/errorHandler.js";
+const { errorHandler } = require("./src/core/middleware/errorHandler.js");
 
-import authRouter from "./src/modules/auth/auth.route.js";
-import productRouter from "./src/modules/product/product.routes.js";
-import categoryRouter from "./src/modules/category/category.routes.js";
-import reviewRouter from "./src/modules/reviews/review.routes.js";
-import orderRouter from "./src/modules/order/order.routes.js";
-import paymentRouter from "./src/modules/payment/payment.routes.js";
-import transactionRouter from "./src/modules/transaction/transaction.routes.js";
-import adminRouter from "./src/modules/admin/admin.routes.js";
-import cloudinaryRouter from "./src/modules/cloudinary/cloudinary.route.js";
+const authRouter = require("./src/modules/auth/auth.route.js");
+const productRouter = require("./src/modules/product/product.routes.js");
+const categoryRouter = require("./src/modules/category/category.routes.js");
+const reviewRouter = require("./src/modules/reviews/review.routes.js");
+const orderRouter = require("./src/modules/order/order.routes.js");
+const paymentRouter = require("./src/modules/payment/payment.routes.js");
+const transactionRouter = require("./src/modules/transaction/transaction.routes.js");
+const adminRouter = require("./src/modules/admin/admin.routes.js");
+const cloudinaryRouter = require("./src/modules/cloudinary/cloudinary.route.js");
 
 const app = express();
 
@@ -125,4 +125,4 @@ app.get("/health", (req, res) => {
 ======================= */
 app.use(errorHandler);
 
-export default app;
+module.exports = app;

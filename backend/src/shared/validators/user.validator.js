@@ -1,4 +1,4 @@
-import { z } from "zod";
+const { z } = require("zod");
 
 const registerSchema = z.object({
     name: z.string("Name must be a string").min(3, "Name must be at least 3 characters long"),
@@ -7,4 +7,4 @@ const registerSchema = z.object({
     role: z.enum(["buyers", "store", "factory"]).default("buyers").optional()
 })
 
-export { registerSchema }  
+module.exports = { registerSchema }

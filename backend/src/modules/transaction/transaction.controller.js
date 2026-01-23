@@ -1,8 +1,9 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import Transaction from "../../models/Transaction.model.js";
-import Payment from "../../models/Payment.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
+//-------------------- CREATE TRANSACTION --------------------//
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const Transaction = require("../../models/Transaction.model.js");
+const Payment = require("../../models/Payment.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
 
 //-------------------- CREATE TRANSACTION --------------------//
 const createTransaction = asyncHandler(async (req, res) => {
@@ -35,4 +36,4 @@ const getTransaction = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, transaction, "Transaction fetched successfully"));
 });
 
-export { createTransaction, getTransactions, getTransaction };
+module.exports = { createTransaction, getTransactions, getTransaction };

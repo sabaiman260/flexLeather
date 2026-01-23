@@ -1,4 +1,4 @@
-import { ApiError } from "../utils/api-error.js";
+const { ApiError } = require("../utils/api-error.js");
 
 const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
@@ -24,5 +24,4 @@ const authorizeRoles = (...allowedRoles) => {
     next();
   };
 };
-
-export { authorizeRoles };
+module.exports = { authorizeRoles };

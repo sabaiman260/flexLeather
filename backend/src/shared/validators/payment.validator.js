@@ -1,4 +1,4 @@
-import { z } from "zod";
+const { z } = require("zod");
 
 const createPaymentSchema = z.object({
     orderId: z.string().min(1, "Order ID is required"),
@@ -17,4 +17,4 @@ const updatePaymentStatusSchema = z.object({
     transactionId: z.string().optional()
 });
 
-export { createPaymentSchema, updatePaymentStatusSchema, submitManualPaymentSchema };
+module.exports = { createPaymentSchema, updatePaymentStatusSchema, submitManualPaymentSchema };

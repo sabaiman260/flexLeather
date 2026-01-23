@@ -1,10 +1,10 @@
-import Router from "express";
-import { upload } from "../../core/middleware/multer.js";
-import { isLoggedIn, optionalAuth } from "../../core/middleware/isLoggedIn.js";
-import { isAdmin } from "../../core/middleware/isAdmin.js";
-import { validate } from "../../core/middleware/validate.js";
-import { createReviewSchema } from "../../shared/validators/review.validator.js";
-import { createReview, getReviews, approveReview, deleteReview } from "./review.controller.js";
+const { Router } = require("express");
+const { upload } = require("../../core/middleware/multer.js");
+const { isLoggedIn, optionalAuth } = require("../../core/middleware/isLoggedIn.js");
+const { isAdmin } = require("../../core/middleware/isAdmin.js");
+const { validate } = require("../../core/middleware/validate.js");
+const { createReviewSchema } = require("../../shared/validators/review.validator.js");
+const { createReview, getReviews, approveReview, deleteReview } = require("./review.controller.js");
 
 const reviewRouter = Router();
 
@@ -21,4 +21,4 @@ reviewRouter.post("/", optionalAuth, upload.array("images"), validate(createRevi
 reviewRouter.put("/approve/:id", isLoggedIn, isAdmin, approveReview);
 reviewRouter.delete("/:id", isLoggedIn, isAdmin, deleteReview);
 
-export default reviewRouter;
+module.exports = reviewRouter;

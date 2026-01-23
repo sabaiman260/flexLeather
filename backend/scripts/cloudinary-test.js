@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import S3UploadHelper from '../src/shared/helpers/s3Upload.js';
+const dotenv = require('dotenv');
+const S3UploadHelper = require('../src/shared/helpers/s3Upload.js');
 
 dotenv.config();
 

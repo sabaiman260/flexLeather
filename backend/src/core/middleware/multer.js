@@ -1,4 +1,4 @@
-import multer from 'multer';               //middleware for file upload,handle form-data 
+const multer = require('multer');               //middleware for file upload,handle form-data 
 
 const storage = multer.memoryStorage();
 
@@ -30,4 +30,4 @@ const factoryUpload = multer({ storage:storage, fileFilter:fileFilter }).fields(
    { name: "factoryLicenseImage", maxCount: 1 }
 ]);
 
-export { upload ,storeUpload,factoryUpload};
+module.exports = { upload ,storeUpload,factoryUpload};

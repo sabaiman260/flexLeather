@@ -1,7 +1,7 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
-import S3UploadHelper from "../../shared/helpers/s3Upload.js";
-import { v2 as cloudinary } from "cloudinary";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
+const S3UploadHelper = require("../../shared/helpers/s3Upload.js");
+const { v2: cloudinary } = require("cloudinary");
 
 // POST /signature
 const signUpload = asyncHandler(async (req, res) => {
@@ -46,4 +46,4 @@ const testConnection = asyncHandler(async (_req, res) => {
   return res.status(500).json(new ApiResponse(500, { ok: false, error: result.error }, 'Cloudinary test failed'));
 });
 
-export { signUpload, testConnection };
+module.exports = { signUpload, testConnection };

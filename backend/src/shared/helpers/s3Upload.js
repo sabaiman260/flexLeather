@@ -1,9 +1,7 @@
-import { v2 as cloudinary } from 'cloudinary';
-import crypto from 'crypto';
-import dotenv from 'dotenv';
-import { PassThrough } from 'stream';
-
-dotenv.config();
+const { v2: cloudinary } = require('cloudinary');
+const crypto = require('crypto');
+require('dotenv').config();
+const { PassThrough } = require('stream');
 
 // If a single CLOUDINARY_URL is provided, parse it into components when individual vars are missing
 if (process.env.CLOUDINARY_URL) {
@@ -257,4 +255,4 @@ class S3UploadHelper {
     }
 }
 
-export default S3UploadHelper;
+module.exports = S3UploadHelper;

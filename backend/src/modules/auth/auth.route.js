@@ -1,9 +1,9 @@
-import Router from "express";
-import { upload } from "../../core/middleware/multer.js";
-import { validate } from "../../core/middleware/validate.js";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../../shared/validators/auth.validator.js";
-import { registerUser, loginUser,verifyUserEmail, logoutUser, getAccessToken, forgotPasswordMail, resetPassword, getMe, googleLogin, updateMe, getGoogleClientId } from "./auth.controller.js";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
+const { Router } = require("express");
+const { upload } = require("../../core/middleware/multer.js");
+const { validate } = require("../../core/middleware/validate.js");
+const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require("../../shared/validators/auth.validator.js");
+const { registerUser, loginUser,verifyUserEmail, logoutUser, getAccessToken, forgotPasswordMail, resetPassword, getMe, googleLogin, updateMe, getGoogleClientId } = require("./auth.controller.js");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
 
 const authRouter = Router();
 
@@ -19,4 +19,4 @@ authRouter.post("/refresh-token", getAccessToken);
 authRouter.post("/forgot-password", validate(forgotPasswordSchema), forgotPasswordMail);
 authRouter.post("/reset-password/:token", validate(resetPasswordSchema), resetPassword);
 
-export default authRouter;
+module.exports = authRouter;

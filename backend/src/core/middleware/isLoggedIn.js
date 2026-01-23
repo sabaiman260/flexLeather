@@ -1,8 +1,8 @@
-import jwt from "jsonwebtoken";
-import { asyncHandler } from "../utils/async-handler.js";
-import { ApiError } from "../utils/api-error.js";
+const jwt = require("jsonwebtoken");
+const { asyncHandler } = require("../utils/async-handler.js");
+const { ApiError } = require("../utils/api-error.js");
 
-export const isLoggedIn = asyncHandler(async (req, res, next) => {
+const isLoggedIn = asyncHandler(async (req, res, next) => {
   let accessToken = req.cookies?.accessToken;
 
   if (!accessToken) {
@@ -26,7 +26,7 @@ export const isLoggedIn = asyncHandler(async (req, res, next) => {
 });
 
 // Optional authentication middleware - sets req.user if valid token exists, but doesn't throw error if not
-export const optionalAuth = asyncHandler(async (req, res, next) => {
+const optionalAuth = asyncHandler(async (req, res, next) => {
   let accessToken = req.cookies?.accessToken;
 
   if (!accessToken) {
@@ -48,3 +48,5 @@ export const optionalAuth = asyncHandler(async (req, res, next) => {
 
   next();
 });
+
+module.exports = { isLoggedIn, optionalAuth };

@@ -1,5 +1,5 @@
-import Router from 'express';
-import { signUpload, testConnection } from './cloudinary.controller.js';
+const { Router } = require('express');
+const { signUpload, testConnection } = require('./cloudinary.controller.js');
 
 const router = Router();
 
@@ -8,4 +8,4 @@ router.post('/signature', signUpload);
 // Diagnostic: run small upload+delete test
 router.get('/test', testConnection);
 
-export default router;
+module.exports = router;

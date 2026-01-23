@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const guestDetailsSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
@@ -125,4 +125,4 @@ orderSchema.pre('validate', function(next) {
 });
 
 const Order = mongoose.model("Order", orderSchema);
-export default Order;
+module.exports = Order;

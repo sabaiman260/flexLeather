@@ -1,12 +1,12 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import crypto from "crypto";
-import User from "../../models/user.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
-import { userForgotPasswordMailBody, userVerificationMailBody } from "../../shared/constants/mail.constant.js";
-import { mailTransporter } from "../../shared/helpers/mail.helper.js";
-import { storeLoginCookies, storeAccessToken } from "../../shared/helpers/cookies.helper.js";
-import S3UploadHelper from "../../shared/helpers/s3Upload.js";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const crypto = require("crypto");
+const User = require("../../models/user.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
+const { userForgotPasswordMailBody, userVerificationMailBody } = require("../../shared/constants/mail.constant.js");
+const { mailTransporter } = require("../../shared/helpers/mail.helper.js");
+const { storeLoginCookies, storeAccessToken } = require("../../shared/helpers/cookies.helper.js");
+const S3UploadHelper = require("../../shared/helpers/s3Upload.js");
 
 
 //-------------------- REGISTER USER --------------------//
@@ -357,18 +357,15 @@ const resetPassword = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, "Password reset successfully"));
 });
 
-export {
+module.exports = {
     registerUser,
     verifyUserEmail,
     loginUser,
     logoutUser,
     getAccessToken,
     forgotPasswordMail,
-    resetPassword
-};
-
-//-------------------- CURRENT USER --------------------//
-export const getMe = asyncHandler(async (req, res) => {
+    resetPassword,
+    getMe: asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) throw new ApiError(404, "User not found");
 
@@ -394,7 +391,7 @@ export const getMe = asyncHandler(async (req, res) => {
 });
 
 //-------------------- UPDATE CURRENT USER --------------------//
-export const updateMe = asyncHandler(async (req, res) => {
+const updateMe = asyncHandler(async (req, res) => {
     const { userName, userEmail, phoneNumber, userAddress } = req.body || {};
     const updates = {};
     if (typeof userName === "string") updates.userName = userName;
@@ -437,13 +434,17 @@ export const updateMe = asyncHandler(async (req, res) => {
     }, "Profile updated"));
 });
 
-export const getGoogleClientId = asyncHandler(async (_req, res) => {
+module.exports.updateMe = updateMe;
+
+const getGoogleClientId = asyncHandler(async (_req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID || null;
     return res.status(200).json(new ApiResponse(200, { clientId }, "OK"));
 });
 
+module.exports.getGoogleClientId = getGoogleClientId;
+
 //-------------------- GOOGLE LOGIN --------------------//
-export const googleLogin = asyncHandler(async (req, res) => {
+const googleLogin = asyncHandler(async (req, res) => {
     const { idToken } = req.body || {};
     if (!idToken) throw new ApiError(400, "Google ID token is required");
 
@@ -522,3 +523,5 @@ export const googleLogin = asyncHandler(async (req, res) => {
 
     return res.status(200).json(new ApiResponse(200, response, "Login successful"));
 });
+
+module.exports.googleLogin = googleLogin;

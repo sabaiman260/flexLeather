@@ -1,9 +1,9 @@
-import Router from "express";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
-import { isAdmin } from "../../core/middleware/isAdmin.js";
-import { validate } from "../../core/middleware/validate.js";
-import { createTransactionSchema } from "../../shared/validators/transaction.validator.js";
-import { createTransaction, getTransactions, getTransaction } from "./transaction.controller.js";
+const { Router } = require("express");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
+const { isAdmin } = require("../../core/middleware/isAdmin.js");
+const { validate } = require("../../core/middleware/validate.js");
+const { createTransactionSchema } = require("../../shared/validators/transaction.validator.js");
+const { createTransaction, getTransactions, getTransaction } = require("./transaction.controller.js");
 
 const transactionRouter = Router();
 
@@ -12,4 +12,4 @@ transactionRouter.post("/", isLoggedIn, isAdmin, validate(createTransactionSchem
 transactionRouter.get("/", isLoggedIn, isAdmin, getTransactions);
 transactionRouter.get("/:id", isLoggedIn, isAdmin, getTransaction);
 
-export default transactionRouter;
+module.exports = transactionRouter;

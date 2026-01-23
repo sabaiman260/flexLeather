@@ -1,6 +1,6 @@
-import { ApiError } from "../utils/api-error.js";
+const { ApiError } = require("../utils/api-error.js");
 
-export const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
     if (err instanceof ApiError) {
         return res.status(err.statusCode).json({
             success: false,
@@ -17,3 +17,5 @@ export const errorHandler = (err, req, res, next) => {
         stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
 };
+
+module.exports = { errorHandler };

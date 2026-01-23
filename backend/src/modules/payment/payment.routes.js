@@ -1,9 +1,9 @@
-import Router from "express";
-import { isLoggedIn } from "../../core/middleware/isLoggedIn.js";
-import { isAdmin } from "../../core/middleware/isAdmin.js";
-import { validate } from "../../core/middleware/validate.js";
-import { createPaymentSchema, updatePaymentStatusSchema, submitManualPaymentSchema } from "../../shared/validators/payment.validator.js";
-import { createPayment, updatePaymentStatus, getPayment, gatewayWebhook, submitManualPayment, getPaymentInstructions } from "./payment.controller.js";
+const { Router } = require("express");
+const { isLoggedIn } = require("../../core/middleware/isLoggedIn.js");
+const { isAdmin } = require("../../core/middleware/isAdmin.js");
+const { validate } = require("../../core/middleware/validate.js");
+const { createPaymentSchema, updatePaymentStatusSchema, submitManualPaymentSchema } = require("../../shared/validators/payment.validator.js");
+const { createPayment, updatePaymentStatus, getPayment, gatewayWebhook, submitManualPayment, getPaymentInstructions } = require("./payment.controller.js");
 
 const paymentRouter = Router();
 
@@ -21,4 +21,4 @@ paymentRouter.put("/:id/status", isLoggedIn, isAdmin, validate(updatePaymentStat
 //-------------------- GATEWAY WEBHOOK --------------------//
 paymentRouter.post("/webhook/:provider", gatewayWebhook);
 
-export default paymentRouter;
+module.exports = paymentRouter;

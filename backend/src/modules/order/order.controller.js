@@ -1,15 +1,15 @@
 //login user can change phone number or address.New details saved inside shippingDetails It does NOT update the user’s 
 //guest user:Saved in guestDetails + copied to shippingDetails
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import mongoose from "mongoose";
-import Order from "../../models/Order.model.js";
-import Product from "../../models/Product.model.js";
-import Payment from "../../models/Payment.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
-import { mailTransporter } from "../../shared/helpers/mail.helper.js";
-import { orderConfirmationMailBody, paymentConfirmationMailBody } from "../../shared/constants/mail.constant.js";
-import S3UploadHelper from "../../shared/helpers/s3Upload.js";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const mongoose = require("mongoose");
+const Order = require("../../models/Order.model.js");
+const Product = require("../../models/Product.model.js");
+const Payment = require("../../models/Payment.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
+const { mailTransporter } = require("../../shared/helpers/mail.helper.js");
+const { orderConfirmationMailBody, paymentConfirmationMailBody } = require("../../shared/constants/mail.constant.js");
+const S3UploadHelper = require("../../shared/helpers/s3Upload.js");
 
 //-------------------- CREATE ORDER --------------------//
 const createOrder = asyncHandler(async (req, res) => {
@@ -494,4 +494,4 @@ const updateOrderPaymentStatus = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, order, "Order payment updated successfully"));
 });
 
-export { createOrder, getUserOrders, getEligibleOrdersForReview, getOrder, getAllOrders, updateOrderStatus, updateOrderPaymentStatus };
+module.exports = { createOrder, getUserOrders, getEligibleOrdersForReview, getOrder, getAllOrders, updateOrderStatus, updateOrderPaymentStatus };

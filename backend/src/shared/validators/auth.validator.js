@@ -1,7 +1,7 @@
 // src/validators/auth.validator.js
-import { z } from "zod";
+const { z } = require("zod");
 
-export const registerSchema = z.object({
+const registerSchema = z.object({
     userName: z
         .string({ required_error: "Name is required" })
         .min(3, "Name must be at least 3 characters"),
@@ -32,7 +32,7 @@ export const registerSchema = z.object({
         .optional(),
 });
 
-export const loginSchema = z.object({
+const loginSchema = z.object({
     userEmail: z
         .string({ required_error: "Email is required" })
         .email("Invalid email address"),
@@ -42,19 +42,19 @@ export const loginSchema = z.object({
         .min(6, "Password must be at least 6 characters"),
 });
 
-export const forgotPasswordSchema = z.object({
+const forgotPasswordSchema = z.object({
     userEmail: z
         .string({ required_error: "Email is required" })
         .email("Invalid email address"),
 });
 
-export const resetPasswordSchema = z.object({
+const resetPasswordSchema = z.object({
     userPassword: z
         .string({ required_error: "Password is required" })
         .min(6, "Password must be at least 6 characters"),
 });
 
-export const updateProfileSchema = z.object({
+const updateProfileSchema = z.object({
     userName: z.string().min(3, "Name must be at least 3 characters").optional(),
     phoneNumber: z
         .string()
@@ -62,3 +62,5 @@ export const updateProfileSchema = z.object({
         .optional(),
     userAddress: z.string().max(200, "Address cannot exceed 200 characters").optional(),
 });
+
+module.exports = { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, updateProfileSchema };

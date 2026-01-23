@@ -1,9 +1,9 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import Product from "../../models/Product.model.js";
-import Category from "../../models/Category.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
-import S3UploadHelper from "../../shared/helpers/s3Upload.js";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const Product = require("../../models/Product.model.js");
+const Category = require("../../models/Category.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
+const S3UploadHelper = require("../../shared/helpers/s3Upload.js");
 
 // Get all products
 const getAllProducts = asyncHandler(async (_req, res) => {
@@ -305,7 +305,7 @@ const searchProducts = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, productsWithUrls, "Product search results"));
 });
 
-export {
+module.exports = {
   getAllProducts,
   getProductsByCategoryId,
   createProduct,

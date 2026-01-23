@@ -1,16 +1,16 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import Payment from "../../models/Payment.model.js";
-import Order from "../../models/Order.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const Payment = require("../../models/Payment.model.js");
+const Order = require("../../models/Order.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
 // NOTE: API-based gateway integrations are currently disabled in services.
 // The service modules still export helper functions but createPayment will
 // use a manual flow for JazzCash / EasyPaisa and disable PayFast redirect.
-import { handlePayFastWebhook } from "./services/payfast.service.js";
-import { handleJazzCashWebhook } from "./services/jazzcash.service.js";
-import { handleEasyPaisaWebhook } from "./services/easypaisa.service.js";
-import { mailTransporter } from "../../shared/helpers/mail.helper.js";
-import { paymentConfirmationMailBody } from "../../shared/constants/mail.constant.js";
+const { handlePayFastWebhook } = require("./services/payfast.service.js");
+const { handleJazzCashWebhook } = require("./services/jazzcash.service.js");
+const { handleEasyPaisaWebhook } = require("./services/easypaisa.service.js");
+const { mailTransporter } = require("../../shared/helpers/mail.helper.js");
+const { paymentConfirmationMailBody } = require("../../shared/constants/mail.constant.js");
 
 //-------------------- CREATE PAYMENT --------------------//
 const createPayment = asyncHandler(async (req, res) => {
@@ -49,7 +49,8 @@ const createPayment = asyncHandler(async (req, res) => {
 
     if (method === 'payfast') {
         // PayFast API integration is disabled. Return manual instructions from the service.
-        const manual = await import('./services/payfast.service.js').then(m => m.createPayFastPayment(order, amount));
+        const payfastService = require('./services/payfast.service.js');
+        const manual = await payfastService.createPayFastPayment(order, amount);
         order.paymentStatus = 'pending';
         await order.save();
         return res.status(201).json(new ApiResponse(201, { payment, ...manual }, 'Manual payment instructions returned'));
@@ -57,11 +58,19 @@ const createPayment = asyncHandler(async (req, res) => {
 
     if (method === 'jazzcash' || method === 'easypaisa') {
         // Return manual instructions (services currently return manual instruction objects)
-        const service = method === 'jazzcash' ? './services/jazzcash.service.js' : './services/easypaisa.service.js';
-        const manual = await import(service).then(m => m.createJazzCashPayment ? m.createJazzCashPayment(order, amount) : m.createEasyPaisaPayment(order, amount, mobileNumber));
-        order.paymentStatus = 'pending';
-        await order.save();
-        return res.status(201).json(new ApiResponse(201, { payment, ...manual }, 'Manual payment instructions returned'));
+        if (method === 'jazzcash') {
+            const jazz = require('./services/jazzcash.service.js');
+            const manual = await jazz.createJazzCashPayment(order, amount);
+            order.paymentStatus = 'pending';
+            await order.save();
+            return res.status(201).json(new ApiResponse(201, { payment, ...manual }, 'Manual payment instructions returned'));
+        } else {
+            const easy = require('./services/easypaisa.service.js');
+            const manual = await easy.createEasyPaisaPayment(order, amount, mobileNumber);
+            order.paymentStatus = 'pending';
+            await order.save();
+            return res.status(201).json(new ApiResponse(201, { payment, ...manual }, 'Manual payment instructions returned'));
+        }
     }
 
     throw new ApiError(400, 'Invalid payment method');
@@ -289,4 +298,4 @@ const getPaymentInstructions = asyncHandler(async (req, res) => {
     }, 'Manual payment instructions'));
 });
 
-export { createPayment, updatePaymentStatus, getPayment, gatewayWebhook, submitManualPayment, getPaymentInstructions };
+module.exports = { createPayment, updatePaymentStatus, getPayment, gatewayWebhook, submitManualPayment, getPaymentInstructions };

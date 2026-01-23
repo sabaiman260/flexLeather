@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const connectDB = async () => {
     try {
@@ -9,8 +9,8 @@ const connectDB = async () => {
             const host = mongoose.connection.host || conn?.connection?.host || 'unknown';
             const port = mongoose.connection.port || conn?.connection?.port || 'unknown';
             const name = mongoose.connection.name || conn?.connection?.name || conn?.connection?.db?.databaseName || process.env.MONGO_URI;
-            console.log(`MongoDB connection -> host: ${host}, port: ${port}, db: ${name}`);
-            console.log(`Mongoose readyState: ${mongoose.connection.readyState}`);
+            console.log("MongoDB connection -> host: " + host + ", port: " + port + ", db: " + name);
+            console.log("Mongoose readyState: " + mongoose.connection.readyState);
         } catch (e) {
             console.log('Could not read full mongoose connection details', e.message);
         }
@@ -20,4 +20,4 @@ const connectDB = async () => {
     }
 };
 
-export default connectDB;
+module.exports = connectDB;

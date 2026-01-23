@@ -1,5 +1,3 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";  
-
 const isProduction = process.env.NODE_ENV === "production";
 
 const storeLoginCookies = (res, accessToken, refreshToken) => {
@@ -30,4 +28,4 @@ const storeAccessToken = (res, accessToken) => {
     });
 }
 
-export { storeLoginCookies, storeAccessToken };
+module.exports = { storeLoginCookies, storeAccessToken };

@@ -1,10 +1,10 @@
-import { asyncHandler } from "../../core/utils/async-handler.js";
-import Review from "../../models/Review.model.js";
-import Product from "../../models/Product.model.js";
-import Order from "../../models/Order.model.js";
-import { ApiError } from "../../core/utils/api-error.js";
-import { ApiResponse } from "../../core/utils/api-response.js";
-import S3UploadHelper from "../../shared/helpers/s3Upload.js";
+const { asyncHandler } = require("../../core/utils/async-handler.js");
+const Review = require("../../models/Review.model.js");
+const Product = require("../../models/Product.model.js");
+const Order = require("../../models/Order.model.js");
+const { ApiError } = require("../../core/utils/api-error.js");
+const { ApiResponse } = require("../../core/utils/api-response.js");
+const S3UploadHelper = require("../../shared/helpers/s3Upload.js");
 
 //-------------------- CREATE REVIEW --------------------//
 const createReview = asyncHandler(async (req, res) => {
@@ -112,4 +112,4 @@ const deleteReview = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, "Review deleted successfully"));
 });
 
-export { createReview, getReviews, approveReview, deleteReview };
+module.exports = { createReview, getReviews, approveReview, deleteReview };

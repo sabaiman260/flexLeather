@@ -1,4 +1,4 @@
-import { z } from "zod";
+const { z } = require("zod");
 
 const createTransactionSchema = z.object({
     paymentId: z.string().min(1, "Payment ID is required"),
@@ -7,4 +7,4 @@ const createTransactionSchema = z.object({
     description: z.string().optional()
 });
 
-export { createTransactionSchema };
+module.exports = { createTransactionSchema };

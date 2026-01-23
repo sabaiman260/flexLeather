@@ -1,4 +1,4 @@
-import { z } from "zod";
+const { z } = require("zod");
 
 const createVariantSchema = z.object({
     product: z.string().min(1, "Product ID is required"),
@@ -10,4 +10,4 @@ const createVariantSchema = z.object({
 
 const updateVariantSchema = createVariantSchema.partial();
 
-export { createVariantSchema, updateVariantSchema };
+module.exports = { createVariantSchema, updateVariantSchema };

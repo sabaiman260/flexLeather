@@ -1,5 +1,5 @@
-import { asyncHandler } from "../utils/async-handler.js";
-import { ApiError } from "../utils/api-error.js";
+const { asyncHandler } = require("../utils/async-handler.js");
+const { ApiError } = require("../utils/api-error.js");
 const isAdmin = asyncHandler(async (req, res, next) => {
   if (!req.user) {
     throw new ApiError(401, "Unauthorized , please login");
@@ -10,4 +10,4 @@ const isAdmin = asyncHandler(async (req, res, next) => {
   }
   next();
 });
-export { isAdmin };
+module.exports = { isAdmin };

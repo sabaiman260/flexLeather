@@ -22,11 +22,9 @@
 //     },
 // })
 
-import Mailgen from "mailgen";
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-
-dotenv.config();
+const Mailgen = require("mailgen");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 /**
  * Brevo SMTP Transport Configuration
@@ -53,7 +51,7 @@ const mailTransporter = nodemailer.createTransport({
 /**
  * Test email transporter connection
  */
-export const testEmailConnection = async () => {
+const testEmailConnection = async () => {
     try {
         await mailTransporter.verify();
         console.log('✅ Brevo SMTP connection successful');
@@ -75,5 +73,4 @@ const mailGenerator = new Mailgen({
         copyright: `© ${new Date().getFullYear()} E - Commerce. All rights reserved.`,
     },
 });
-
-export { mailTransporter, mailGenerator };
+module.exports = { mailTransporter, mailGenerator, testEmailConnection };

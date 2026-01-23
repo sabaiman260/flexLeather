@@ -1,4 +1,4 @@
-import { z } from "zod";
+const { z } = require("zod");
 
 const createReviewSchema = z.object({
     product: z.string().min(1, "Product ID is required"),
@@ -7,4 +7,4 @@ const createReviewSchema = z.object({
     comment: z.string().min(5, "Comment must be at least 5 characters long")
 });
 
-export { createReviewSchema };
+module.exports = { createReviewSchema };

@@ -1,4 +1,4 @@
-import { z } from "zod";
+const { z } = require("zod");
 
 // Helper to allow comma-separated strings or array
 const stringOrArray = z.union([
@@ -7,7 +7,7 @@ const stringOrArray = z.union([
 ]);
 
 // Create product
-export const createProductSchema = z.object({
+const createProductSchema = z.object({
   name: z.string().min(1, "Product name is required").trim(),
   description: z.string().optional().nullable(),
   price: z.preprocess((val) => Number(val), z.number().min(0)),
@@ -23,7 +23,7 @@ export const createProductSchema = z.object({
   ),
 });
 
-export const updateProductSchema = z.object({
+const updateProductSchema = z.object({
     name: z.preprocess((val) => (typeof val === "string" ? val.trim() : val), z.string()).optional(),
     description: z.string().optional().nullable(),
     price: z.preprocess((val) => (val !== undefined ? Number(val) : undefined), z.number().min(0).optional()),
@@ -47,4 +47,6 @@ export const updateProductSchema = z.object({
       z.boolean().optional()
     )
   });
+
+module.exports = { createProductSchema, updateProductSchema };
   
