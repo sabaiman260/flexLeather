@@ -13,6 +13,7 @@ import { apiFetch, API_BASE_URL } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { Dialog } from '@/components/ui/dialog'
 
 type Product = {
   id: string
@@ -60,6 +61,10 @@ export default function ProductDetail() {
   const [selectedOrderId, setSelectedOrderId] = useState<string>('')
   const [guestFullName, setGuestFullName] = useState<string>('')
   const [guestEmail, setGuestEmail] = useState<string>('')
+
+  const [mainImage, setMainImage] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
     (async () => {
@@ -111,6 +116,33 @@ export default function ProductDetail() {
       }
     })()
   }, [productId])
+
+  useEffect(() => {
+    if (product && product.images.length > 0) {
+      setMainImage(product.images[0]); // Set the first image as the default main image
+    }
+  }, [product]);
+
+  const handleThumbnailClick = (image: string) => {
+    setMainImage(image); // Update the main image when a thumbnail is clicked
+  };
+
+  const handleImageClick = () => {
+    setIsModalOpen(true); // Open the modal on image click
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.5, 3)); // Increase zoom level up to 3x
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.5, 1)); // Decrease zoom level down to 1x
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false); // Close the modal
+    setZoomLevel(1); // Reset zoom level
+  };
 
   const handleAddToCart = () => {
     if (!product) return
@@ -167,9 +199,12 @@ export default function ProductDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Product Images */}
             <div>
-              <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-1 flex items-center justify-center">
+              <div 
+                className="relative overflow-hidden bg-muted aspect-square mb-4 p-1 flex items-center justify-center cursor-pointer"
+                onClick={handleImageClick}
+              >
                 <Image
-                  src={product.images[0]}
+                  src={mainImage}
                   alt={product.name}
                   fill
                   className="object-contain"
@@ -177,12 +212,16 @@ export default function ProductDetail() {
                   loading="eager"
                 />
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {product.images.slice(0,4).map((img, i) => (
-                  <div key={i} className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 p-1 flex items-center justify-center">
+              <div className="grid grid-cols-5 gap-2">
+                {product.images.map((img, i) => (
+                  <div 
+                    key={i} 
+                    className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 p-1 flex items-center justify-center"
+                    onClick={() => handleThumbnailClick(img)}
+                  >
                     <Image
                       src={img}
-                      alt={`${product.name} view ${i+1}`}
+                      alt={`${product.name} view ${i + 1}`}
                       fill
                       className="object-contain"
                     />
@@ -198,7 +237,7 @@ export default function ProductDetail() {
                 <h1 className="text-3xl md:text-4xl font-serif font-light tracking-wide mb-4">
                   {product.name}
                 </h1>
-                <p className="text-2xl font-serif">${product.price.toFixed(2)}</p>
+                <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
               </div>
 
               <p className="text-sm leading-relaxed mb-8 opacity-80">
@@ -305,15 +344,6 @@ export default function ProductDetail() {
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   Add to Cart
-                </Button>
-
-                <Button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Heart className={`w-5 h-5 mr-2 ${isFavorite ? 'fill-current text-accent' : ''}`} />
-                  {isFavorite ? 'Saved' : 'Save to Favorites'}
                 </Button>
               </div>
 
@@ -544,6 +574,54 @@ export default function ProductDetail() {
           </div>
         </div>
       </main>
+
+      {/* Image Modal */}
+      <Dialog open={isModalOpen} onOpenChange={closeModal}>
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <Dialog.Overlay className="fixed inset-0 bg-black opacity-70" />
+          <Dialog.Content className="bg-background rounded-lg shadow-lg max-w-3xl w-full p-0">
+            <div className="relative">
+              <button 
+                onClick={closeModal} 
+                className="absolute top-4 right-4 text-white bg-black rounded-full p-2 hover:bg-opacity-80 transition"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+              <div className="flex items-center justify-center p-4">
+                <Image
+                  src={mainImage}
+                  alt={product.name}
+                  width={800}
+                  height={800}
+                  className="object-contain"
+                  priority
+                  loading="eager"
+                />
+              </div>
+              <div className="flex justify-center gap-2 p-4">
+                <button
+                  onClick={handleZoomOut}
+                  className="px-4 py-2 text-sm border rounded-md transition-all hover:bg-muted disabled:opacity-50"
+                  disabled={zoomLevel <= 1}
+                  aria-label="Zoom out"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleZoomIn}
+                  className="px-4 py-2 text-sm border rounded-md transition-all hover:bg-muted disabled:opacity-50"
+                  disabled={zoomLevel >= 3}
+                  aria-label="Zoom in"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </div>
+      </Dialog>
+
       <Footer />
     </>
   )

@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FaWhatsapp } from 'react-icons/fa';
 
 const NAV_TEXT_COLOR = 'text-[#E6D8C8]'
 
@@ -153,11 +154,11 @@ export default function Header() {
               />
             </div>
             <div className={`flex flex-col ${NAV_TEXT_COLOR}`}>
-              <span className="text-[10px] tracking-[0.3em] uppercase opacity-70">
-                ESTD 2025
+              <span className="text-[10px] tracking-[0.3em] font-bold uppercase opacity-70">
+                Flex
               </span>
               <span className="text-[15px] font-serif font-bold tracking-widest uppercase leading-none">
-                Flex Leather
+                Leather
               </span>
             </div>
           </Link>
@@ -295,6 +296,19 @@ export default function Header() {
       {/* Spacer so content starts below fixed header (match header height) */}
       <div className="md:hidden h-[64px]" />
       <div className="hidden md:block h-[88px]" />
+
+      {/* WhatsApp Floating Button */}
+      <div className="fixed bottom-4 right-4">
+        <a 
+          href="https://wa.me/923184642266" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600"
+          aria-label="Chat with us on WhatsApp"
+        >
+          <FaWhatsapp size={32} />
+        </a>
+      </div>
     </>
   )
 }

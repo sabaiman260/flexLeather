@@ -8,7 +8,7 @@ import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
-import { Heart, ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { apiFetch, BackendProduct } from '@/lib/api'
 
 type UIProduct = {
@@ -212,22 +212,6 @@ export default function ShopPage() {
                           fill
                           className="object-cover transition duration-500 group-hover:scale-105"
                         />
-
-                        <button
-                          onClick={e => {
-                            e.preventDefault()
-                            toggleFavorite(p.id)
-                          }}
-                          className="absolute top-4 right-4 bg-white p-2 rounded-full"
-                        >
-                          <Heart
-                            className={`w-5 h-5 ${
-                              favorites.includes(p.id)
-                                ? 'fill-accent text-accent'
-                                : ''
-                            }`}
-                          />
-                        </button>
                       </div>
 
                       <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">

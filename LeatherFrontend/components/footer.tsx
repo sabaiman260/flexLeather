@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Mail, MapPin, Phone, Facebook, Instagram, Youtube } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 
 function TikTokIcon(props: React.ComponentProps<'svg'>) {
   return (
@@ -25,10 +26,27 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <h3 className="text-xl font-serif font-light tracking-widest mb-6">
-              FlexLeather
-            </h3>
-            <p className="text-sm font-light leading-relaxed opacity-80">
+            <Link href="/" className="flex items-center gap-4 group mb-12">
+              <div className="relative w-14 h-14 transition-transform group-hover:scale-105 ">
+                <Image
+                  src="/logos.png"
+                  alt="Flex Leather Logo"
+                  width={56}
+                  height={56}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div className="flex flex-col text-primary-foreground ml-1">
+                <span className="text-[10px] tracking-[0.3em] font-bold uppercase opacity-70">
+                  Flex
+                </span>
+                <span className="text-[15px] font-serif font-bold tracking-widest uppercase leading-none">
+                  Leather
+                </span>
+              </div>
+            </Link>
+            <p className="text-sm font-light leading-relaxed opacity-80 mt-60`">
               Handcrafted luxury leather goods for the discerning individual.
             </p>
           </div>

@@ -5,21 +5,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
-import { Heart, ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { apiFetch, BackendProduct } from '@/lib/api'
 
 type UIProduct = { id: string; name: string; price: number; image: string; category?: string };
 
 export default function FeaturedProducts() {
-  const [favorites, setFavorites] = useState<string[]>([])
   const [products, setProducts] = useState<UIProduct[]>([])
   const { addToCart } = useCart()
-
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-    )
-  }
 
   useEffect(() => {
     (async () => {
@@ -55,41 +48,6 @@ export default function FeaturedProducts() {
                   fill
                   className="object-cover transition duration-500 group-hover:scale-105"
                 />
-                {favorites.includes(product.id) ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      toggleFavorite(product.id)
-                    }}
-                    aria-pressed="true"
-                    aria-label="Remove from favorites"
-                    title="Remove from favorites"
-                    className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-accent hover:text-accent-foreground transition"
-                  >
-                    <Heart
-                      aria-hidden="true"
-                      className={`w-5 h-5 fill-current text-accent`}
-                    />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      toggleFavorite(product.id)
-                    }}
-                    aria-pressed="false"
-                    aria-label="Add to favorites"
-                    title="Add to favorites"
-                    className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-accent hover:text-accent-foreground transition"
-                  >
-                    <Heart
-                      aria-hidden="true"
-                      className={`w-5 h-5`}
-                    />
-                  </button>
-                )}
               </div>
               <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
                 {product.name}
@@ -108,7 +66,7 @@ export default function FeaturedProducts() {
                 size="sm"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                Select Options
+                Add to Cart
               </Button>
             </Link>
           ))}
