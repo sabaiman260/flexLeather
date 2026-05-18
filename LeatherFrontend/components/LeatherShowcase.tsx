@@ -38,13 +38,12 @@ export default function LeatherShowcase() {
           <div className="relative w-[220px] h-[220px] sm:w-[280px] sm:h-[280px] md:w-[340px] md:h-[340px] perspective">
             <div className="slider3d animate-rotate3D">
               {images.map((img, i) => (
-                <div key={i} className="slide">
+                <div key={i} className="slide relative aspect-square p-1 flex items-center justify-center">
                   <Image
                     src={img}
                     alt={`showcase ${i+1}`}
-                    width={340}
-                    height={340}
-                    className="w-full h-full object-cover rounded-xl shadow-lg"
+                    fill
+                    className="object-contain rounded-xl shadow-lg"
                     priority={i === 0}
                     loading={i === 0 ? 'eager' : 'lazy'}
                   />

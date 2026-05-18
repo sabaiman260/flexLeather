@@ -31,12 +31,12 @@ export default function FaqPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="q3">
+              {/* <AccordionItem value="q3">
                 <AccordionTrigger>Do you offer repairs?</AccordionTrigger>
                 <AccordionContent>
                   Yes — we offer lifetime repair support for many of our products. Contact support with photos and details, and we’ll advise on next steps and estimated costs.
                 </AccordionContent>
-              </AccordionItem>
+              </AccordionItem> */}
 
               <AccordionItem value="q4">
                 <AccordionTrigger>How do I care for leather?</AccordionTrigger>

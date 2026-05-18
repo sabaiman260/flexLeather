@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Check, X } from 'lucide-react'
@@ -130,19 +131,11 @@ function OrderDetailsContent() {
             <div className="space-y-4">
               {order.items.map((item, idx) => (
                 <div key={idx} className="flex gap-4 items-start border-b border-border pb-4 last:border-0 last:pb-0">
-                  <div className="w-16 h-16 bg-muted rounded overflow-hidden relative">
+                  <div className="w-16 h-16 bg-muted rounded overflow-hidden relative p-1 flex items-center justify-center">
                     {item.product?.imageUrls?.[0] ? (
-                      <img
-                        src={item.product.imageUrls[0]}
-                        alt={item.product.name}
-                        className="object-cover w-full h-full"
-                      />
+                      <Image src={item.product.imageUrls[0]} alt={item.product.name} fill className="object-contain" />
                     ) : item.product?.images?.[0] ? (
-                      <img
-                        src={item.product.images[0]}
-                        alt={item.product.name}
-                        className="object-cover w-full h-full"
-                      />
+                      <Image src={item.product.images[0]} alt={item.product.name} fill className="object-contain" />
                     ) : null}
                   </div>
                   <div className="flex-1">

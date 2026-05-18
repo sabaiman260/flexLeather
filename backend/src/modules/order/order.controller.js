@@ -105,10 +105,16 @@ const createOrder = asyncHandler(async (req, res) => {
 
     } else {
         console.log("👥 Guest checkout");
-        if (!guestDetails) throw new ApiError(400, "Guest details are required");
+        // Accept guest details either as `guestDetails` object or as top-level fields
+        const incomingGuest = (guestDetails && typeof guestDetails === 'object') ? guestDetails : {
+            fullName: req.body.fullName,
+            email: req.body.email,
+            phone: req.body.phone,
+            address: req.body.address
+        };
 
         const requiredFields = ["fullName","email","phone","address"];
-        const missingFields = requiredFields.filter(f => !guestDetails[f]);
+        const missingFields = requiredFields.filter(f => !incomingGuest[f]);
         if (missingFields.length) {
             console.error("❌ Missing guest fields:", missingFields);
             throw new ApiError(400, `Missing guest details: ${missingFields.join(", ")}`);
@@ -116,12 +122,12 @@ const createOrder = asyncHandler(async (req, res) => {
 
         orderData.buyer = null;
         orderData.guestDetails = {
-            fullName: guestDetails.fullName.trim(),
-            email: guestDetails.email.toLowerCase().trim(),
-            phone: guestDetails.phone.trim(),
-            address: guestDetails.address.trim()
+            fullName: incomingGuest.fullName.trim(),
+            email: incomingGuest.email.toLowerCase().trim(),
+            phone: incomingGuest.phone.trim(),
+            address: incomingGuest.address.trim()
         };
-        orderData.shippingAddress = guestDetails.address.trim();
+        orderData.shippingAddress = incomingGuest.address.trim();
     }
 
     let newOrder;
@@ -152,7 +158,6 @@ const createOrder = asyncHandler(async (req, res) => {
             console.error("❌ Failed to create COD payment record:", err.message);
         }
     }
-
     // Send order confirmation email immediately for COD orders (only once)
     if (paymentMethod === 'cod') {
         try {
@@ -208,6 +213,59 @@ const createOrder = asyncHandler(async (req, res) => {
         } catch (err) {
             console.error('[order] Error in order confirmation flow for order', newOrder._id, err?.message || err);
         }
+    }
+
+    // For non-COD orders, also send an order confirmation email at placement (one-time)
+    try {
+        if (!newOrder.orderConfirmationSent) {
+            let customerName = '';
+            let customerEmail = '';
+            if (newOrder.buyer) {
+                const populated = await Order.findById(newOrder._id).populate('buyer', 'userName userEmail');
+                customerName = populated.buyer?.userName || '';
+                customerEmail = populated.buyer?.userEmail || '';
+            } else if (newOrder.guestDetails) {
+                customerName = newOrder.guestDetails.fullName;
+                customerEmail = newOrder.guestDetails.email;
+            }
+
+            if (customerEmail) {
+                const itemsForEmail = mappedItems.map(mi => {
+                    const prod = productMap.get(mi.product) || {};
+                    return { productName: prod.name || 'Product', quantity: mi.quantity, price: mi.price };
+                });
+
+                const mailHtml = orderConfirmationMailBody({
+                    orderId: newOrder._id.toString().slice(-6),
+                    customerName: customerName || (customerEmail.split('@')[0]),
+                    customerEmail,
+                    items: itemsForEmail,
+                    subtotal: calculatedTotal,
+                    shipping: SHIPPING_COST,
+                    total: newOrder.finalAmount || totalWithShipping,
+                    paymentMethod,
+                    shippingAddress: newOrder.shippingAddress
+                });
+
+                try {
+                    await mailTransporter.sendMail({
+                        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                        to: customerEmail,
+                        subject: `Order Confirmation - Order #${newOrder._id}`,
+                        html: mailHtml
+                    });
+                    newOrder.orderConfirmationSent = true;
+                    await newOrder.save();
+                    console.log('[order] Order confirmation email sent for order', newOrder._id);
+                } catch (mailErr) {
+                    console.error('[order] Failed to send order confirmation email for order', newOrder._id, mailErr?.message || mailErr);
+                }
+            } else {
+                console.warn('[order] No customer email; skipping order confirmation email for order', newOrder._id);
+            }
+        }
+    } catch (err) {
+        console.error('[order] Error sending order confirmation email for order', newOrder._id, err?.message || err);
     }
 
     return res.status(201).json(new ApiResponse(201, newOrder, "Order placed successfully"));
@@ -288,6 +346,66 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
     order.orderStatus = status;
     await order.save();
+
+    // Send order confirmation email when order is confirmed (one-time)
+    try {
+        if (status === 'confirmed' && !order.orderConfirmationSent) {
+            // Resolve recipient
+            let customerName = '';
+            let customerEmail = '';
+
+            if (order.buyer) {
+                await order.populate('buyer', 'userName userEmail');
+                customerName = order.buyer?.userName || '';
+                customerEmail = order.buyer?.userEmail || '';
+            } else if (order.guestDetails) {
+                customerName = order.guestDetails.fullName;
+                customerEmail = order.guestDetails.email;
+            }
+
+            if (customerEmail) {
+                try {
+                    // Ensure product names are available for email
+                    await order.populate('items.product', 'name');
+
+                    const itemsForEmail = (order.items || []).map(it => ({
+                        productName: (it.product && it.product.name) ? it.product.name : 'Product',
+                        quantity: it.quantity,
+                        price: it.price
+                    }));
+
+                    const mailHtml = orderConfirmationMailBody({
+                        orderId: order._id.toString().slice(-6),
+                        customerName: customerName || (customerEmail.split('@')[0]),
+                        customerEmail,
+                        items: itemsForEmail,
+                        subtotal: order.totalAmount || 0,
+                        shipping: order.shippingCost || 0,
+                        total: order.finalAmount || order.totalAmount || 0,
+                        paymentMethod: order.paymentMethod,
+                        shippingAddress: order.shippingAddress || (order.guestDetails && order.guestDetails.address) || ''
+                    });
+
+                    await mailTransporter.sendMail({
+                        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                        to: customerEmail,
+                        subject: `Order Confirmed - Order #${order._id}`,
+                        html: mailHtml
+                    });
+
+                    order.orderConfirmationSent = true;
+                    await order.save();
+                    console.log('[order] Order confirmation email sent for order', order._id);
+                } catch (mailErr) {
+                    console.error('[order] Failed to send order confirmation email for order', order._id, mailErr?.message || mailErr);
+                }
+            } else {
+                console.warn('[order] No customer email available for order', order._id, 'skipping order confirmation email');
+            }
+        }
+    } catch (err) {
+        console.error('[order] Error in order confirmation flow for order', order._id, err?.message || err);
+    }
 
     return res.status(200).json(new ApiResponse(200, order, "Order status updated"));
 });

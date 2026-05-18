@@ -338,11 +338,11 @@ export default function CheckoutPage() {
                 <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pr-2">
                   {items.map(item => (
                     <div key={item.id} className="flex gap-4 border-b border-border pb-4 last:border-0">
-                      <div className="relative w-16 h-16 bg-muted shrink-0">
-                        {item.image && (
-                          <Image src={item.image} alt={item.name} fill className="object-cover" />
-                        )}
-                      </div>
+                        <div className="relative w-16 h-16 bg-muted shrink-0 p-1 flex items-center justify-center">
+                          {item.image && (
+                            <Image src={item.image} alt={item.name} fill className="object-contain" />
+                          )}
+                        </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>

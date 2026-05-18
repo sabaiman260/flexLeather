@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
 import { Heart, ShoppingCart } from 'lucide-react'
@@ -47,11 +48,12 @@ export default function FeaturedProducts() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {products.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`} className="group">
-              <div className="relative overflow-hidden bg-muted aspect-square mb-4">
-                <img
+              <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-0 flex items-center justify-center">
+                <Image
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-105"
                 />
                 {favorites.includes(product.id) ? (
                   <button
