@@ -245,7 +245,7 @@ export default function ShopPage() {
                       >
                         <ShoppingCart className="w-4 h-4 mr-2" />
                         {(p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0) 
-                          ? 'Select Options' 
+                          ? 'Add to Cart' 
                           : 'Add to Cart'}
                       </Button>
                     </Link>

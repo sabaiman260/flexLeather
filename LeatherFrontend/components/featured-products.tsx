@@ -10,7 +10,13 @@ import { apiFetch, BackendProduct } from '@/lib/api'
 
 type UIProduct = { id: string; name: string; price: number; image: string; category?: string };
 
-export default function FeaturedProducts() {
+type FeaturedProductsProps = {
+  category?: string
+  currentProductId?: string
+  title?: string
+}
+
+export default function FeaturedProducts({ category, currentProductId, title }: FeaturedProductsProps) {
   const [products, setProducts] = useState<UIProduct[]>([])
   const { addToCart } = useCart()
 
@@ -19,23 +25,27 @@ export default function FeaturedProducts() {
       try {
         const res = await apiFetch('/api/v1/products/getAll')
         const list: BackendProduct[] = res?.data || []
-        const mapped: UIProduct[] = list.slice(0, 8).map(p => ({
+        const mapped: UIProduct[] = list.map(p => ({
           id: p._id,
           name: p.name,
           price: p.price,
           image: (p.imageUrls && p.imageUrls[0]) || '/placeholder.jpg',
           category: (typeof p.category === 'object' && p.category?.name) || undefined,
         }))
-        setProducts(mapped)
+        const filtered = category
+          ? mapped.filter((p) => p.category === category && p.id !== currentProductId)
+          : mapped.filter((p) => p.id !== currentProductId)
+
+        setProducts(filtered.slice(0, 8))
       } catch {}
     })()
-  }, [])
+  }, [category, currentProductId])
 
   return (
     <section className="bg-background py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <h2 className="text-center text-3xl md:text-4xl font-serif font-light tracking-wide mb-12">
-          Featured Collection
+          {title || (category ? 'Related Products' : 'Featured Collection')}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

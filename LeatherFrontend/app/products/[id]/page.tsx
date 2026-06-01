@@ -7,13 +7,14 @@ import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
+import FeaturedProducts from '@/components/featured-products'
 import { useCart } from '@/components/cart-context'
 import { Heart, ShoppingCart, Minus, Plus, Star } from 'lucide-react'
 import { apiFetch, API_BASE_URL } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { Dialog } from '@/components/ui/dialog'
+import { Dialog, DialogOverlay, DialogContent } from '@/components/ui/dialog'
 
 type Product = {
   id: string
@@ -50,6 +51,7 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [reviewTab, setReviewTab] = useState<'reviews' | 'submit'>('reviews')
   const { addToCart } = useCart()
   const router = useRouter()
 
@@ -62,7 +64,7 @@ export default function ProductDetail() {
   const [guestFullName, setGuestFullName] = useState<string>('')
   const [guestEmail, setGuestEmail] = useState<string>('')
 
-  const [mainImage, setMainImage] = useState<string>('');
+  const [mainImage, setMainImage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
 
@@ -118,17 +120,21 @@ export default function ProductDetail() {
   }, [productId])
 
   useEffect(() => {
-    if (product && product.images.length > 0) {
-      setMainImage(product.images[0]); // Set the first image as the default main image
+    if (product && product.images && product.images.length > 0) {
+      const first = product.images[0] || null
+      setMainImage(first)
+    } else {
+      setMainImage(null)
     }
   }, [product]);
 
-  const handleThumbnailClick = (image: string) => {
-    setMainImage(image); // Update the main image when a thumbnail is clicked
+  const handleThumbnailClick = (image: string | undefined | null) => {
+    if (!image) return
+    setMainImage(image)
   };
 
   const handleImageClick = () => {
-    setIsModalOpen(true); // Open the modal on image click
+    if (mainImage) setIsModalOpen(true); // Open the modal only when image exists
   };
 
   const handleZoomIn = () => {
@@ -161,7 +167,7 @@ export default function ProductDetail() {
       id: product.id, 
       name: product.name, 
       price: product.price, 
-      image: product.images[0] ?? '/placeholder.jpg',
+      image: product.images[0] || '/placeholder.jpg',
       selectedColor: selectedColor,
       selectedSize: selectedSize,
       availableColors: product.colors,
@@ -200,32 +206,38 @@ export default function ProductDetail() {
             {/* Product Images */}
             <div>
               <div 
-                className="relative overflow-hidden bg-muted aspect-square mb-4 p-1 flex items-center justify-center cursor-pointer"
+                className="relative overflow-hidden bg-white border border-border rounded-3xl mb-4 p-1 flex items-center justify-center cursor-pointer h-[520px] md:h-[680px]"
                 onClick={handleImageClick}
               >
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  fill
-                  className="object-contain"
-                  priority
-                  loading="eager"
-                />
+                {mainImage ? (
+                  <Image
+                    src={mainImage}
+                    alt={product.name}
+                    fill
+                    className="object-contain"
+                    priority
+                    loading="eager"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">No image</div>
+                )}
               </div>
               <div className="grid grid-cols-5 gap-2">
                 {product.images.map((img, i) => (
-                  <div 
-                    key={i} 
-                    className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 p-1 flex items-center justify-center"
-                    onClick={() => handleThumbnailClick(img)}
-                  >
-                    <Image
-                      src={img}
-                      alt={`${product.name} view ${i + 1}`}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
+                  img ? (
+                    <div
+                      key={i}
+                      className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 p-1 flex items-center justify-center"
+                      onClick={() => handleThumbnailClick(img)}
+                    >
+                      <Image
+                        src={img}
+                        alt={`${product.name} view ${i + 1}`}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  ) : null
                 ))}
               </div>
             </div>
@@ -349,237 +361,246 @@ export default function ProductDetail() {
 
               {/* Reviews */}
               <div className="mt-12 border-t border-border pt-8">
-                <h3 className="text-lg font-serif mb-4">Customer Reviews</h3>
-                {loadingInitial ? (
-                  <p className="text-sm opacity-70">Loading reviews...</p>
-                ) : reviews.length === 0 ? (
-                  <p className="text-sm opacity-70">No reviews yet.</p>
-                ) : (
-                <div className="space-y-6">
-                  {reviews.map(r => (
-                    <div key={r._id} className="border border-border p-4">
-                      <p className="text-sm font-medium">{r.user?.userName || 'Anonymous'}</p>
-                      <div className="flex items-center gap-1 text-yellow-500 mt-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} size={14} fill={i < r.rating ? "currentColor" : "none"} className={i < r.rating ? "" : "text-gray-300"} />
-                        ))}
-                      </div>
-                      {r.comment && <p className="text-sm opacity-80 mt-2">{r.comment}</p>}
-                      {r.imageUrls && r.imageUrls.length > 0 && (
-                        <div className="grid grid-cols-4 gap-2 mt-3">
-                          {r.imageUrls.map((u, i) => (
-                            <div key={i} className="relative aspect-square">
-                              <Image src={u} alt={`review image ${i+1}`} fill className="object-cover" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                )}
-
-                {/* Load More */}
-                {(!loadingInitial && reviews.length > 0 && reviews.length < totalReviews) && (
-                  <div className="mt-4 flex justify-center">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                  <div className="flex rounded-full bg-muted border border-border p-1">
                     <button
-                      onClick={async () => {
-                        const nextPage = page + 1
-                        setLoadingMore(true)
-                        try {
-                          const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=${nextPage}&limit=${limit}`, {
-                            method: 'GET',
-                            credentials: 'include'
-                          })
-                          if (resp.ok) {
-                            const data = await resp.json().catch(() => ({}))
-                            const payload = data?.data || {}
-                            const more: Review[] = payload.reviews || []
-                            setReviews(prev => [...prev, ...more])
-                            setPage(nextPage)
-                            setTotalReviews(payload.total || totalReviews)
-                          }
-                        } catch (err) {
-                          console.error('Failed to load more reviews', err)
-                        } finally {
-                          setLoadingMore(false)
-                        }
-                      }}
-                      className="px-4 py-2 border border-border rounded"
-                      aria-label="Load more reviews"
+                      type="button"
+                      onClick={() => setReviewTab('reviews')}
+                      className={`px-4 py-2 rounded-full transition ${reviewTab === 'reviews' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
                     >
-                      {loadingMore ? (
-                        <span className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                          Loading...
-                        </span>
-                      ) : (
-                        'Load More'
-                      )}
+                      Reviews
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReviewTab('submit')}
+                      className={`px-4 py-2 rounded-full transition ${reviewTab === 'submit' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                    >
+                      Submit Review
                     </button>
                   </div>
-                )}
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{reviewTab === 'reviews' ? 'Read customer feedback' : 'Share your experience'}</p>
+                </div>
 
-                <h4 className="text-md font-serif mt-8 mb-2">Write a review</h4>
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault()
-
-                    const token = localStorage.getItem('accessToken')
-
-                    // If logged-in, require order selection (existing behavior)
-                    if (token) {
-                      if (!selectedOrderId) {
-                        toast.error('Please select an order to review')
-                        return
-                      }
-                    }
-
-                    if (reviewComment.length < 5) {
-                      toast.error('Comment must be at least 5 characters long')
-                      return
-                    }
-
-                    const fd = new FormData()
-                    fd.append('product', productId)
-                    // Append orderId: for logged-in users use selectedOrderId (required),
-                    // for guests send a harmless placeholder so backend validation (which
-                    // currently requires an orderId) passes — controller treats guests
-                    // differently and will ignore order checks.
-                    if (token) {
-                      if (selectedOrderId) fd.append('orderId', selectedOrderId)
-                    } else {
-                      fd.append('orderId', 'guest')
-                    }
-                    fd.append('rating', String(reviewRating))
-                    fd.append('comment', reviewComment)
-
-                    // If guest, optionally include guest details
-                    if (!token) {
-                      if (guestFullName) fd.append('fullName', guestFullName)
-                      if (guestEmail) fd.append('email', guestEmail)
-                    }
-
-                    if (reviewImages) {
-                      for (let i = 0; i < reviewImages.length; i++) {
-                        fd.append('images', reviewImages[i])
-                      }
-                    }
-
-                    try {
-                      const res = await fetch(`${API_BASE_URL}/api/v1/reviews/`, {
-                        method: 'POST',
-                        credentials: 'include',
-                        body: fd,
-                      })
-
-                      if (!res.ok) {
-                        const data = await res.json().catch(() => ({}))
-                        throw new Error(data.message || 'Failed to submit review')
-                      }
-
-                      toast.success('Review submitted and awaiting approval')
-                      setReviewComment('')
-                      setReviewRating(5)
-                      setReviewImages(null)
-                      setSelectedOrderId('')
-                      setGuestFullName('')
-                      setGuestEmail('')
-                      // Reset file input
-                      const fileInput = document.getElementById('review-images') as HTMLInputElement
-                      if (fileInput) fileInput.value = ''
-                    } catch (err: any) {
-                      toast.error(err.message || 'Failed to submit review')
-                    }
-                  }}
-                  className="space-y-3"
-                >
-                  {/** Show order select only to logged-in users with eligible orders */}
-                  {localStorage.getItem('accessToken') && eligibleOrders.length > 0 && (
-                    <div>
-                      <label className="block text-sm mb-2">Select Order to Review</label>
-                      <select
-                        value={selectedOrderId}
-                        onChange={(e) => setSelectedOrderId(e.target.value)}
-                        className="w-full border border-border px-3 py-2"
-                        required
-                      >
-                        <option value="">Choose an order...</option>
-                        {eligibleOrders.map(order => (
-                          <option key={order._id} value={order._id}>
-                            Order #{order._id.slice(-6)} - {new Date(order.createdAt).toLocaleDateString()} - PKR {order.totalAmount.toLocaleString()}
-                          </option>
+                {reviewTab === 'reviews' ? (
+                  <>
+                    {loadingInitial ? (
+                      <p className="text-sm opacity-70">Loading reviews...</p>
+                    ) : reviews.length === 0 ? (
+                      <p className="text-sm opacity-70">No reviews yet.</p>
+                    ) : (
+                      <div className="space-y-6">
+                        {reviews.map(r => (
+                          <div key={r._id} className="border border-border p-4">
+                            <p className="text-sm font-medium">{r.user?.userName || 'Anonymous'}</p>
+                            <div className="flex items-center gap-1 text-yellow-500 mt-1">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star key={i} size={14} fill={i < r.rating ? 'currentColor' : 'none'} className={i < r.rating ? '' : 'text-gray-300'} />
+                              ))}
+                            </div>
+                            {r.comment && <p className="text-sm opacity-80 mt-2">{r.comment}</p>}
+                            {r.imageUrls && r.imageUrls.length > 0 && (
+                              <div className="grid grid-cols-4 gap-2 mt-3">
+                                {r.imageUrls.map((u, i) => (
+                                  <div key={i} className="relative aspect-square">
+                                    <Image src={u} alt={`review image ${i + 1}`} fill className="object-cover" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ))}
-                      </select>
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  {/** If logged-in but no eligible orders, show informational message (unchanged) */}
-                  {localStorage.getItem('accessToken') && eligibleOrders.length === 0 && (
-                    <div className="text-sm text-muted-foreground p-3 bg-muted rounded">
-                      No eligible orders found. You can only review products from orders that are paid and delivered.
-                    </div>
-                  )}
+                    {(!loadingInitial && reviews.length > 0 && reviews.length < totalReviews) && (
+                      <div className="mt-4 flex justify-center">
+                        <button
+                          onClick={async () => {
+                            const nextPage = page + 1
+                            setLoadingMore(true)
+                            try {
+                              const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=${nextPage}&limit=${limit}`, {
+                                method: 'GET',
+                                credentials: 'include'
+                              })
+                              if (resp.ok) {
+                                const data = await resp.json().catch(() => ({}))
+                                const payload = data?.data || {}
+                                const more: Review[] = payload.reviews || []
+                                setReviews(prev => [...prev, ...more])
+                                setPage(nextPage)
+                                setTotalReviews(payload.total || totalReviews)
+                              }
+                            } catch (err) {
+                              console.error('Failed to load more reviews', err)
+                            } finally {
+                              setLoadingMore(false)
+                            }
+                          }}
+                          className="px-4 py-2 border border-border rounded"
+                          aria-label="Load more reviews"
+                        >
+                          {loadingMore ? (
+                            <span className="flex items-center gap-2">
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                              Loading...
+                            </span>
+                          ) : (
+                            'Load More'
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-6">
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault()
 
-                  {/** For guests, allow entering name/email but do not block submission */}
-                  {!localStorage.getItem('accessToken') && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
-                        placeholder="Your name (optional)"
-                        value={guestFullName}
-                        onChange={(e) => setGuestFullName(e.target.value)}
-                      />
-                      <Input
-                        placeholder="Your email (optional)"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                      />
-                    </div>
-                  )}
+                        const token = localStorage.getItem('accessToken')
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <select
-                      name="rating"
-                      className="border border-border px-3 py-2"
-                      value={reviewRating}
-                      onChange={(e) => setReviewRating(Number(e.target.value))}
+                        if (token) {
+                          if (!selectedOrderId) {
+                            toast.error('Please select an order to review')
+                            return
+                          }
+                        }
+
+                        if (reviewComment.length < 5) {
+                          toast.error('Comment must be at least 5 characters long')
+                          return
+                        }
+
+                        const fd = new FormData()
+                        fd.append('product', productId)
+                        if (token) {
+                          if (selectedOrderId) fd.append('orderId', selectedOrderId)
+                        } else {
+                          fd.append('orderId', 'guest')
+                        }
+                        fd.append('rating', String(reviewRating))
+                        fd.append('comment', reviewComment)
+
+                        if (!token) {
+                          if (guestFullName) fd.append('fullName', guestFullName)
+                          if (guestEmail) fd.append('email', guestEmail)
+                        }
+
+                        if (reviewImages) {
+                          for (let i = 0; i < reviewImages.length; i++) {
+                            fd.append('images', reviewImages[i])
+                          }
+                        }
+
+                        try {
+                          const res = await fetch(`${API_BASE_URL}/api/v1/reviews/`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: fd,
+                          })
+
+                          if (!res.ok) {
+                            const data = await res.json().catch(() => ({}))
+                            throw new Error(data.message || 'Failed to submit review')
+                          }
+
+                          toast.success('Review submitted and awaiting approval')
+                          setReviewComment('')
+                          setReviewRating(5)
+                          setReviewImages(null)
+                          setSelectedOrderId('')
+                          setGuestFullName('')
+                          setGuestEmail('')
+                          const fileInput = document.getElementById('review-images') as HTMLInputElement
+                          if (fileInput) fileInput.value = ''
+                        } catch (err: any) {
+                          toast.error(err.message || 'Failed to submit review')
+                        }
+                      }}
+                      className="space-y-4"
                     >
-                      {[1,2,3,4,5].map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                    <Input
-                      id="review-images"
-                      name="images"
-                      type="file"
-                      multiple
-                      onChange={(e) => setReviewImages(e.target.files)}
-                    />
+                      {localStorage.getItem('accessToken') && eligibleOrders.length > 0 && (
+                        <div>
+                          <label className="block text-sm mb-2">Select Order to Review</label>
+                          <select
+                            value={selectedOrderId}
+                            onChange={(e) => setSelectedOrderId(e.target.value)}
+                            className="w-full border border-border px-3 py-2"
+                            required
+                          >
+                            <option value="">Choose an order...</option>
+                            {eligibleOrders.map(order => (
+                              <option key={order._id} value={order._id}>
+                                Order #{order._id.slice(-6)} - {new Date(order.createdAt).toLocaleDateString()} - PKR {order.totalAmount.toLocaleString()}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {localStorage.getItem('accessToken') && eligibleOrders.length === 0 && (
+                        <div className="text-sm text-muted-foreground p-3 bg-muted rounded">
+                          No eligible orders found. You can only review products from orders that are paid and delivered.
+                        </div>
+                      )}
+
+                      {!localStorage.getItem('accessToken') && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <Input
+                            placeholder="Your name (optional)"
+                            value={guestFullName}
+                            onChange={(e) => setGuestFullName(e.target.value)}
+                          />
+                          <Input
+                            placeholder="Your email (optional)"
+                            value={guestEmail}
+                            onChange={(e) => setGuestEmail(e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <select
+                          name="rating"
+                          className="border border-border px-3 py-2"
+                          value={reviewRating}
+                          onChange={(e) => setReviewRating(Number(e.target.value))}
+                        >
+                          {[1,2,3,4,5].map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                        <Input
+                          id="review-images"
+                          name="images"
+                          type="file"
+                          multiple
+                          onChange={(e) => setReviewImages(e.target.files)}
+                        />
+                      </div>
+                      <Textarea
+                        name="comment"
+                        placeholder="Share your experience"
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                      />
+                      <Button type="submit" className="bg-primary text-primary-foreground">Submit Review</Button>
+                    </form>
                   </div>
-                  <Textarea 
-                    name="comment" 
-                    placeholder="Share your experience" 
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                  />
-                  <Button type="submit" className="bg-primary text-primary-foreground">Submit Review</Button>
-                </form>
+                )}
               </div>
 
-              {/* Trust Badges */}
-              <div className="mt-12 space-y-3 text-xs opacity-75 border-t border-border pt-8">
-                <p>✓ Genuine leather, handcrafted quality</p>
-                <p>✓ Free shipping on orders over PKR 15,000</p>
-                <p>✓ Secure checkout</p>
-              </div>
             </div>
           </div>
         </div>
       </main>
 
+      <FeaturedProducts category={product.category} currentProductId={product.id} title="Related Products" />
+
       {/* Image Modal */}
       <Dialog open={isModalOpen} onOpenChange={closeModal}>
         <div className="flex items-center justify-center min-h-screen p-4">
-          <Dialog.Overlay className="fixed inset-0 bg-black opacity-70" />
-          <Dialog.Content className="bg-background rounded-lg shadow-lg max-w-3xl w-full p-0">
+          <DialogOverlay className="fixed inset-0 bg-black opacity-70" />
+          <DialogContent className="bg-background rounded-lg shadow-lg max-w-4xl w-full p-0">
             <div className="relative">
               <button 
                 onClick={closeModal} 
@@ -588,37 +609,25 @@ export default function ProductDetail() {
               >
                 &times;
               </button>
-              <div className="flex items-center justify-center p-4">
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  width={800}
-                  height={800}
-                  className="object-contain"
-                  priority
-                  loading="eager"
-                />
+              <div className="flex items-center justify-center p-8 min-h-96">
+                {mainImage ? (
+                  <div className="relative w-full h-[680px] md:h-[760px]">
+                    <Image
+                      src={mainImage}
+                      alt={product.name}
+                      fill
+                      className="object-contain"
+                      priority
+                      loading="eager"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-96 flex items-center justify-center text-sm text-muted-foreground">No image available</div>
+                )}
               </div>
-              <div className="flex justify-center gap-2 p-4">
-                <button
-                  onClick={handleZoomOut}
-                  className="px-4 py-2 text-sm border rounded-md transition-all hover:bg-muted disabled:opacity-50"
-                  disabled={zoomLevel <= 1}
-                  aria-label="Zoom out"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={handleZoomIn}
-                  className="px-4 py-2 text-sm border rounded-md transition-all hover:bg-muted disabled:opacity-50"
-                  disabled={zoomLevel >= 3}
-                  aria-label="Zoom in"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Zoom buttons removed per request */}
             </div>
-          </Dialog.Content>
+          </DialogContent>
         </div>
       </Dialog>
 
