@@ -81,6 +81,18 @@ export default function FeaturedProducts({ category, currentProductId, title }: 
             </Link>
           ))}
         </div>
+
+        {/* View All Products Button */}
+        <div className="flex justify-center mt-12">
+          <Link href="/shop">
+            <Button 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-base"
+              size="lg"
+            >
+              View All Products
+            </Button>
+          </Link>
+        </div>
       </div>
     </section>
   )

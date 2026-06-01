@@ -206,7 +206,7 @@ export default function ProductDetail() {
             {/* Product Images */}
             <div>
               <div 
-                className="relative overflow-hidden bg-white border border-border rounded-3xl mb-4 p-1 flex items-center justify-center cursor-pointer h-[520px] md:h-[680px]"
+                className="relative overflow-hidden bg-white border border-border rounded-3xl mb-4 flex items-center justify-center cursor-pointer aspect-square"
                 onClick={handleImageClick}
               >
                 {mainImage ? (
@@ -214,7 +214,7 @@ export default function ProductDetail() {
                     src={mainImage}
                     alt={product.name}
                     fill
-                    className="object-contain"
+                    className="object-cover"
                     priority
                     loading="eager"
                   />
@@ -227,14 +227,14 @@ export default function ProductDetail() {
                   img ? (
                     <div
                       key={i}
-                      className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 p-1 flex items-center justify-center"
+                      className="relative overflow-hidden bg-muted aspect-square cursor-pointer hover:opacity-75 flex items-center justify-center"
                       onClick={() => handleThumbnailClick(img)}
                     >
                       <Image
                         src={img}
                         alt={`${product.name} view ${i + 1}`}
                         fill
-                        className="object-contain"
+                        className="object-cover"
                       />
                     </div>
                   ) : null
@@ -596,40 +596,120 @@ export default function ProductDetail() {
 
       <FeaturedProducts category={product.category} currentProductId={product.id} title="Related Products" />
 
-      {/* Image Modal */}
-      <Dialog open={isModalOpen} onOpenChange={closeModal}>
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <DialogOverlay className="fixed inset-0 bg-black opacity-70" />
-          <DialogContent className="bg-background rounded-lg shadow-lg max-w-4xl w-full p-0">
-            <div className="relative">
-              <button 
-                onClick={closeModal} 
-                className="absolute top-4 right-4 text-white bg-black rounded-full p-2 hover:bg-opacity-80 transition"
-                aria-label="Close"
-              >
-                &times;
-              </button>
-              <div className="flex items-center justify-center p-8 min-h-96">
-                {mainImage ? (
-                  <div className="relative w-full h-[680px] md:h-[760px]">
-                    <Image
-                      src={mainImage}
-                      alt={product.name}
-                      fill
-                      className="object-contain"
-                      priority
-                      loading="eager"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-96 flex items-center justify-center text-sm text-muted-foreground">No image available</div>
-                )}
-              </div>
-              {/* Zoom buttons removed per request */}
+      {/* Image Modal with Hover Zoom Effect */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300" onMouseLeave={closeModal}>
+          <div 
+            className="absolute inset-0 bg-black opacity-85 cursor-zoom-out"
+            onClick={closeModal}
+            style={{ animation: 'fadeIn 0.3s ease-out' }}
+          />
+          
+          <div 
+            className="relative w-full h-full flex items-center justify-center bg-black"
+            style={{
+              animation: 'zoomIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+          >
+            <style>{`
+              @keyframes zoomIn {
+                from {
+                  transform: scale(0.85);
+                  opacity: 0;
+                }
+                to {
+                  transform: scale(1);
+                  opacity: 1;
+                }
+              }
+              .zoom-image-container {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+              }
+              .zoom-image {
+                transition: transform 0.3s ease-out;
+                max-width: 90vw;
+                max-height: 90vh;
+                cursor: zoom-in;
+              }
+              .zoom-image.zoomed {
+                cursor: zoom-out;
+              }
+            `}</style>
+
+            {/* Close Button */}
+            <button 
+              onClick={closeModal} 
+              className="absolute top-6 right-6 text-white bg-black/50 hover:bg-black/70 rounded-full p-2 transition shadow-md z-10"
+              aria-label="Close"
+              title="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Image Container */}
+            <div className="zoom-image-container">
+              {mainImage ? (
+                <div
+                  className={`zoom-image ${zoomLevel > 1 ? 'zoomed' : ''}`}
+                  onClick={() => setZoomLevel(zoomLevel > 1 ? 1 : 2)}
+                  onMouseMove={(e) => {
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const xPercent = (x / rect.width) * 100;
+                    const yPercent = (y / rect.height) * 100;
+                    (e.currentTarget as HTMLDivElement).style.transformOrigin = `${xPercent}% ${yPercent}%`;
+                  }}
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Image
+                    src={mainImage}
+                    alt={product.name}
+                    fill
+                    className="object-contain"
+                    style={{
+                      transform: `scale(${zoomLevel})`,
+                    }}
+                    priority
+                    loading="eager"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-muted-foreground">No image available</div>
+              )}
             </div>
-          </DialogContent>
+
+            {/* Zoom Hint */}
+            {zoomLevel === 1 && (
+              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-full">
+                Click to zoom in
+              </div>
+            )}
+          </div>
         </div>
-      </Dialog>
+      )}
+
+      <style>{`
+        @media (prefers-reduced-motion: no-preference) {
+          * {
+            --animate-in: fade-in;
+          }
+        }
+      `}</style>
 
       <Footer />
     </>
