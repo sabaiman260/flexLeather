@@ -50,7 +50,7 @@ export default function FeaturedProducts({ category, currentProductId, title }: 
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {products.map((product) => (
-            <Link key={product.id} href={`/products/${product.id}`} className="group">
+            <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col h-full">
               <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-0 flex items-center justify-center">
                 <Image
                   src={product.image}
@@ -59,25 +59,27 @@ export default function FeaturedProducts({ category, currentProductId, title }: 
                   className="object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
-              <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
-                {product.name}
-              </h3>
-              {product.category && (
-                <p className="text-xs text-muted-foreground mb-3">{product.category}</p>
-              )}
-              <p className="font-serif text-lg mb-4">PKR {product.price.toLocaleString()}</p>
-              <Button
-                onClick={(e) => {
-                  e.preventDefault()
-                  // Redirect to product page for selection instead of direct add
-                  window.location.href = `/products/${product.id}`
-                }}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                size="sm"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Add to Cart
-              </Button>
+              <div className="flex flex-col flex-grow">
+                <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
+                  {product.name}
+                </h3>
+                {product.category && (
+                  <p className="text-xs text-muted-foreground mb-3">{product.category}</p>
+                )}
+                <p className="font-serif text-lg mb-4">PKR {product.price.toLocaleString()}</p>
+                <Button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    // Redirect to product page for selection instead of direct add
+                    window.location.href = `/products/${product.id}`
+                  }}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-auto"
+                  size="sm"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Add to Cart
+                </Button>
+              </div>
             </Link>
           ))}
         </div>

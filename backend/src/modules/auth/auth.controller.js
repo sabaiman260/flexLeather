@@ -56,14 +56,22 @@ const registerUser = asyncHandler(async (req, res) => {
 
         // Send verification email (DO NOT fail if email fails)
         try {
-            await mailTransporter.sendMail({
+            const mailOptions = {
                 from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
                 to: userEmail,
-                subject: "Verify your email - FlexLeather",
+                subject: "Verify Your Email - FlexLeather",
                 html: userVerificationMailBody(existingUser.userName, verificationLink)
-            });
+            };
+            
+            console.log('[auth:register] Attempting to resend verification email to:', userEmail);
+            await mailTransporter.sendMail(mailOptions);
+            console.log('[auth:register] Resend verification email sent successfully to:', userEmail);
         } catch (error) {
-            console.error("Email sending failed:", error.message);
+            console.error('[auth:register] Email resend failed:', {
+                message: error.message,
+                code: error.code,
+                to: userEmail
+            });
         }
 
         return res.status(200).json(
@@ -163,14 +171,26 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // 5️⃣ Send verification email (DO NOT fail registration)
     try {
-        await mailTransporter.sendMail({
+        const mailOptions = {
             from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
             to: userEmail,
-            subject: "Verify your email",
+            subject: "Verify Your Email - FlexLeather",
             html: userVerificationMailBody(userName, verificationLink)
-        });
+        };
+        
+        console.log('[auth:register] Attempting to send verification email to:', userEmail);
+        console.log('[auth:register] Mail from:', mailOptions.from);
+        
+        await mailTransporter.sendMail(mailOptions);
+        console.log('[auth:register] Verification email sent successfully to:', userEmail);
     } catch (error) {
-        console.error("Email sending failed:", error.message);
+        console.error('[auth:register] Email sending failed:', {
+            message: error.message,
+            code: error.code,
+            command: error.command,
+            to: userEmail,
+            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com'
+        });
     }
 
     // 6️⃣ Response
@@ -200,7 +220,10 @@ const verifyUserEmail = asyncHandler(async (req, res) => {
         userVerificationTokenExpiry: { $gt: Date.now() }
     });
 
-    if (!user) throw new ApiError(400, "Invalid or expired verification token");
+    if (!user) {
+        // Redirect to frontend with error
+        return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?verified=failed`);
+    }
 
     user.userIsVerified = true;
     user.userVerificationToken = null;
@@ -208,7 +231,8 @@ const verifyUserEmail = asyncHandler(async (req, res) => {
 
     await user.save();
 
-    return res.status(200).json(new ApiResponse(200, {}, "Email verified successfully"));
+    // Redirect to frontend with success
+    return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?verified=success`);
 });
 
 //-------------------- LOGIN --------------------//

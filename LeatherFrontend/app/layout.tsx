@@ -28,10 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${playfair.variable} font-sans antialiased`}>
+        <Toaster />
         <AuthProvider>
           <CartProvider>
             {children}
-            <Toaster />
           </CartProvider>
         </AuthProvider>
         <Analytics />

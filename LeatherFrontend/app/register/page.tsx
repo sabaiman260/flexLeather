@@ -9,6 +9,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/auth-provider'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -64,19 +65,22 @@ export default function RegisterPage() {
 
       // Handle different registration outcomes gracefully
       if (response?.data?.code === 'USER_ALREADY_EXISTS') {
-        setError('An account with this email already exists. Please try logging in instead.')
+        const msg = 'An account with this email already exists. Please try logging in instead.'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
       if (response?.data?.code === 'VERIFICATION_RESENT') {
-        alert('This email is already registered but not verified. A new verification email has been sent. Please check your email.')
-        window.location.href = '/login'
+        const msg = 'This email is already registered but not verified. A new verification email has been sent. Please check your email.'
+        toast.info(msg)
+        setTimeout(() => window.location.href = '/login', 2000)
         return
       }
 
       // Success case - new user registration
-      alert('Registered successfully! Check your email to verify your account.')
-      window.location.href = '/login'
+      toast.success('Registered successfully! Check your email to verify your account.')
+      setTimeout(() => window.location.href = '/login', 2000)
     } catch (err: any) {
       // Only console.error for real failures (500, network, DB errors)
       // Expected cases (USER_ALREADY_EXISTS, VERIFICATION_RESENT) are handled above
@@ -87,9 +91,19 @@ export default function RegisterPage() {
         console.error('Error details:', err?.details || err?.body)
       }
 
+      // Handle 409 conflict (user already exists)
+      if (err?.status === 409) {
+        const msg = 'An account with this email already exists. Please try logging in instead.'
+        setError(msg)
+        toast.error(msg)
+        return
+      }
+
       // For unexpected errors, show generic message
       if (!isExpectedCase) {
-        setError(err?.message || 'Registration failed. Please try again.')
+        const errorMsg = err?.message || 'Registration failed. Please try again.'
+        setError(errorMsg)
+        toast.error(errorMsg)
       }
     } finally {
       setLoading(false)
@@ -171,6 +185,12 @@ export default function RegisterPage() {
   return (
     <>
       <Header />
+      <style>{`
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-webkit-password-reveal-button {
+          display: none;
+        }
+      `}</style>
       <main className="bg-background min-h-screen flex items-center justify-center">
         <div className="w-full max-w-md px-4">
           <div className="border border-border p-8">
@@ -250,16 +270,18 @@ export default function RegisterPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-20"
+                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-10"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -271,16 +293,18 @@ export default function RegisterPage() {
                 <div className="relative">
                   <input
                     type={showConfirm ? 'text' : 'password'}
-                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-20"
+                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-10"
                     placeholder="••••••••"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(v => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
                     aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                    tabIndex={-1}
                   >
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>

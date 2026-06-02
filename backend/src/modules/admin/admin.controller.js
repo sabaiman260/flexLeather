@@ -212,3 +212,49 @@ export const getSalesReport = asyncHandler(async (req, res) => {
       new ApiResponse(200, { range, startDate, results }, "Sales report loaded")
     );
 });
+
+// GET ALL USERS
+export const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find().select('-userPassword -refreshToken');
+  
+  if (!users) {
+    throw new ApiError(404, "No users found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
+});
+
+// DELETE USER
+export const deleteUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  
+  const user = await User.findByIdAndDelete(userId);
+  
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, user, "User deleted successfully"));
+});
+
+// UPDATE USER ROLE
+export const updateUserRole = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const { userRole } = req.body;
+
+  if (!['customer', 'admin'].includes(userRole)) {
+    throw new ApiError(400, "Invalid role");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { userRole },
+    { new: true }
+  ).select('-userPassword -refreshToken');
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, user, "User role updated successfully"));
+});

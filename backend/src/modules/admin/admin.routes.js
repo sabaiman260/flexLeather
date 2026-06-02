@@ -11,7 +11,10 @@ import {
     toggleBuyerStatus,
     getPendingReviews,
     getDashboardStats,
-    getSalesReport
+    getSalesReport,
+    getAllUsers,
+    deleteUser,
+    updateUserRole
 } from "./admin.controller.js";
 
 const adminRouter = Router();
@@ -26,6 +29,11 @@ adminRouter.put("/profile", updateAdminProfile);
 // Profile Image
 adminRouter.put("/profile/image", upload.single("profileImage"), updateAdminProfileImage);
 adminRouter.delete("/profile/image", deleteAdminProfileImage);
+
+// User Management
+adminRouter.get("/users", getAllUsers);
+adminRouter.delete("/users/:id", deleteUser);
+adminRouter.put("/users/:id/role", updateUserRole);
 
 // Buyer Management
 adminRouter.patch("/buyer/toggle-status/:id", toggleBuyerStatus);

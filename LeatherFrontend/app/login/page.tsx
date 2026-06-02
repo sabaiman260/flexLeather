@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/lib/api'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -218,11 +219,17 @@ export default function LoginPage() {
 
       if (accessToken && user) {
         login(accessToken, user)
+        toast.success('Login successful!')
         if (user.userRole === 'admin') router.push('/admin')
         else router.push('/')
+      } else {
+        toast.error('Login failed - no tokens received')
+        setError('Login failed - no tokens received')
       }
     } catch (err: any) {
-      setError(err?.message || 'Login failed')
+      const errorMessage = err?.message || 'Login failed'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -231,6 +238,12 @@ export default function LoginPage() {
   return (
     <>
       <Header />
+      <style>{`
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-webkit-password-reveal-button {
+          display: none;
+        }
+      `}</style>
       <main className="bg-background min-h-screen flex items-center justify-center">
         <div className="w-full max-w-md px-4">
           <div className="border border-border p-8">
@@ -257,15 +270,18 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-20"
+                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-10"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
