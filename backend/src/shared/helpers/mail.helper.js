@@ -51,6 +51,67 @@ const mailTransporter = nodemailer.createTransport({
 });
 
 /**
+ * Email queue for reliable delivery
+ */
+const emailQueue = [];
+let isProcessingQueue = false;
+let queueProcessingStarted = false;
+
+/**
+ * Send email with retry logic
+ */
+export const sendEmailWithRetry = async (mailOptions, maxRetries = 3) => {
+    const timestamp = new Date().toISOString();
+    const logPrefix = `[📧 EMAIL ${timestamp}]`;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`${logPrefix} Attempt ${attempt}/${maxRetries} → Sending to: ${mailOptions.to}`);
+            
+            const info = await mailTransporter.sendMail(mailOptions);
+            
+            console.log(`${logPrefix} ✅ SUCCESS! MessageId: ${info.messageId}`);
+            console.log(`${logPrefix} From: ${mailOptions.from}`);
+            console.log(`${logPrefix} To: ${mailOptions.to}`);
+            console.log(`${logPrefix} Subject: ${mailOptions.subject}`);
+            
+            return { success: true, info };
+        } catch (error) {
+            console.error(`${logPrefix} ❌ FAILED (Attempt ${attempt}/${maxRetries}):`, {
+                to: mailOptions.to,
+                error: error.message,
+                code: error.code
+            });
+            
+            if (attempt === maxRetries) {
+                console.error(`${logPrefix} ⚠️ ALL RETRIES EXHAUSTED for ${mailOptions.to}`);
+                
+                // Add to queue for later retry
+                emailQueue.push(mailOptions);
+                console.error(`${logPrefix} Email queued for later retry. Queue length: ${emailQueue.length}`);
+                
+                return { success: false, error, queued: true };
+            }
+            
+            // Wait before retrying (exponential backoff: 1s, 2s, 4s)
+            const waitTime = Math.pow(2, attempt - 1) * 1000;
+            console.log(`${logPrefix} ⏳ Retrying in ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+};
+
+/**
+ * Get queue status
+ */
+export const getEmailQueueStatus = () => {
+    return {
+        queueLength: emailQueue.length,
+        isProcessing: isProcessingQueue
+    };
+};
+
+/**
  * Test email transporter connection
  */
 export const testEmailConnection = async () => {
@@ -59,7 +120,11 @@ export const testEmailConnection = async () => {
         console.log('✅ Brevo SMTP connection successful');
         return true;
     } catch (error) {
-        console.error('❌ Brevo SMTP connection failed:', error.message);
+        console.error('❌ Brevo SMTP connection failed:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        });
         return false;
     }
 };

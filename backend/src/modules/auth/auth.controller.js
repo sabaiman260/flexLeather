@@ -4,7 +4,7 @@ import User from "../../models/user.model.js";
 import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
 import { userForgotPasswordMailBody, userVerificationMailBody } from "../../shared/constants/mail.constant.js";
-import { mailTransporter } from "../../shared/helpers/mail.helper.js";
+import { mailTransporter, sendEmailWithRetry } from "../../shared/helpers/mail.helper.js";
 import { storeLoginCookies, storeAccessToken } from "../../shared/helpers/cookies.helper.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 
@@ -54,7 +54,7 @@ const registerUser = asyncHandler(async (req, res) => {
         const base = process.env.BASE_URL || "http://localhost:3000";
         const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
 
-        // Send verification email (DO NOT fail if email fails)
+        // Send verification email with retry logic (DO NOT fail if email fails)
         try {
             const mailOptions = {
                 from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
@@ -64,12 +64,16 @@ const registerUser = asyncHandler(async (req, res) => {
             };
             
             console.log('[auth:register] Attempting to resend verification email to:', userEmail);
-            await mailTransporter.sendMail(mailOptions);
-            console.log('[auth:register] Resend verification email sent successfully to:', userEmail);
+            const result = await sendEmailWithRetry(mailOptions);
+            
+            if (result.success) {
+                console.log('[auth:register] ✅ Resend verification email sent successfully to:', userEmail);
+            } else {
+                console.error('[auth:register] ❌ Resend verification email failed after retries:', userEmail);
+            }
         } catch (error) {
-            console.error('[auth:register] Email resend failed:', {
+            console.error('[auth:register] ❌ Unexpected error resending verification email:', {
                 message: error.message,
-                code: error.code,
                 to: userEmail
             });
         }
@@ -169,7 +173,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const base = process.env.BASE_URL || "http://localhost:3000";
     const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
 
-    // 5️⃣ Send verification email (DO NOT fail registration)
+    // 5️⃣ Send verification email with retry logic (DO NOT fail registration)
     try {
         const mailOptions = {
             from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
@@ -179,17 +183,20 @@ const registerUser = asyncHandler(async (req, res) => {
         };
         
         console.log('[auth:register] Attempting to send verification email to:', userEmail);
-        console.log('[auth:register] Mail from:', mailOptions.from);
+        const result = await sendEmailWithRetry(mailOptions);
         
-        await mailTransporter.sendMail(mailOptions);
-        console.log('[auth:register] Verification email sent successfully to:', userEmail);
+        if (result.success) {
+            console.log('[auth:register] ✅ Verification email sent successfully to:', userEmail);
+        } else {
+            console.error('[auth:register] ❌ Verification email failed after retries:', {
+                to: userEmail,
+                error: result.error?.message
+            });
+        }
     } catch (error) {
-        console.error('[auth:register] Email sending failed:', {
+        console.error('[auth:register] ❌ Unexpected error sending verification email:', {
             message: error.message,
-            code: error.code,
-            command: error.command,
-            to: userEmail,
-            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com'
+            to: userEmail
         });
     }
 
@@ -348,12 +355,29 @@ const forgotPasswordMail = asyncHandler(async (req, res) => {
     // Link should point to the frontend reset page so user sees the form
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${unHashedToken}`;
 
-    await mailTransporter.sendMail({
-        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
-        to: userEmail,
-        subject: "Password Reset",
-        html: userForgotPasswordMailBody(user.userName, resetLink),
-    });
+    // Send password reset email with retry logic
+    try {
+        const mailOptions = {
+            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+            to: userEmail,
+            subject: "Password Reset - FlexLeather",
+            html: userForgotPasswordMailBody(user.userName, resetLink),
+        };
+        
+        console.log('[auth:forgotPassword] Attempting to send reset email to:', userEmail);
+        const result = await sendEmailWithRetry(mailOptions);
+        
+        if (result.success) {
+            console.log('[auth:forgotPassword] ✅ Password reset email sent successfully to:', userEmail);
+        } else {
+            console.error('[auth:forgotPassword] ❌ Password reset email failed after retries:', userEmail);
+        }
+    } catch (error) {
+        console.error('[auth:forgotPassword] ❌ Unexpected error sending password reset email:', {
+            message: error.message,
+            to: userEmail
+        });
+    }
 
     return res.status(200).json(new ApiResponse(200, { resetLink }, "Password reset link sent"));
 });

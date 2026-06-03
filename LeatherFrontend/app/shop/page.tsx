@@ -203,7 +203,7 @@ export default function ShopPage() {
                     <Link
                       key={p.id}
                       href={`/products/${p.id}`}
-                      className="group"
+                      className="group flex flex-col h-full"
                     >
                       <div className="relative aspect-square bg-muted overflow-hidden mb-4 p-0 flex items-center justify-center">
                         <Image
@@ -224,7 +224,7 @@ export default function ShopPage() {
 
                       <Button
                         size="sm"
-                        className="w-full mt-4"
+                        className="w-full mt-auto"
                         onClick={e => {
                           e.preventDefault()
                           

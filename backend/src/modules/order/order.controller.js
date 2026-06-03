@@ -1,4 +1,4 @@
-//login user can change phone number or address.New details saved inside shippingDetails It does NOT update the user’s 
+//login user can change phone number or address.New details saved inside shippingDetails It does NOT update the user's 
 //guest user:Saved in guestDetails + copied to shippingDetails
 import { asyncHandler } from "../../core/utils/async-handler.js";
 import mongoose from "mongoose";
@@ -7,7 +7,7 @@ import Product from "../../models/Product.model.js";
 import Payment from "../../models/Payment.model.js";
 import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
-import { mailTransporter } from "../../shared/helpers/mail.helper.js";
+import { mailTransporter, sendEmailWithRetry } from "../../shared/helpers/mail.helper.js";
 import { orderConfirmationMailBody, paymentConfirmationMailBody } from "../../shared/constants/mail.constant.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 
@@ -194,17 +194,22 @@ const createOrder = asyncHandler(async (req, res) => {
                     });
 
                     try {
-                        await mailTransporter.sendMail({
+                        const result = await sendEmailWithRetry({
                             from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
                             to: customerEmail,
                             subject: `Order Confirmation - Order #${newOrder._id}`,
                             html: mailHtml
                         });
-                        newOrder.orderConfirmationSent = true;
-                        await newOrder.save();
-                        console.log('[order] Order confirmation email sent for order', newOrder._id);
+                        
+                        if (result.success) {
+                            newOrder.orderConfirmationSent = true;
+                            await newOrder.save();
+                            console.log('[order] ✅ Order confirmation email sent for order', newOrder._id);
+                        } else {
+                            console.error('[order] ❌ Failed to send order confirmation email for order', newOrder._id, result.error?.message);
+                        }
                     } catch (mailErr) {
-                        console.error('[order] Failed to send order confirmation email for order', newOrder._id, mailErr?.message || mailErr);
+                        console.error('[order] ❌ Unexpected error sending order confirmation email for order', newOrder._id, mailErr?.message || mailErr);
                     }
                 } else {
                     console.warn('[order] No customer email; skipping order confirmation email for order', newOrder._id);
@@ -248,17 +253,22 @@ const createOrder = asyncHandler(async (req, res) => {
                 });
 
                 try {
-                    await mailTransporter.sendMail({
+                    const result = await sendEmailWithRetry({
                         from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
                         to: customerEmail,
                         subject: `Order Confirmation - Order #${newOrder._id}`,
                         html: mailHtml
                     });
-                    newOrder.orderConfirmationSent = true;
-                    await newOrder.save();
-                    console.log('[order] Order confirmation email sent for order', newOrder._id);
+                    
+                    if (result.success) {
+                        newOrder.orderConfirmationSent = true;
+                        await newOrder.save();
+                        console.log('[order] ✅ Order confirmation email sent for order', newOrder._id);
+                    } else {
+                        console.error('[order] ❌ Failed to send order confirmation email for order', newOrder._id, result.error?.message);
+                    }
                 } catch (mailErr) {
-                    console.error('[order] Failed to send order confirmation email for order', newOrder._id, mailErr?.message || mailErr);
+                    console.error('[order] ❌ Unexpected error sending order confirmation email for order', newOrder._id, mailErr?.message || mailErr);
                 }
             } else {
                 console.warn('[order] No customer email; skipping order confirmation email for order', newOrder._id);
@@ -386,18 +396,26 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
                         shippingAddress: order.shippingAddress || (order.guestDetails && order.guestDetails.address) || ''
                     });
 
-                    await mailTransporter.sendMail({
-                        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
-                        to: customerEmail,
-                        subject: `Order Confirmed - Order #${order._id}`,
-                        html: mailHtml
-                    });
-
-                    order.orderConfirmationSent = true;
-                    await order.save();
-                    console.log('[order] Order confirmation email sent for order', order._id);
-                } catch (mailErr) {
-                    console.error('[order] Failed to send order confirmation email for order', order._id, mailErr?.message || mailErr);
+                    try {
+                        const result = await sendEmailWithRetry({
+                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                            to: customerEmail,
+                            subject: `Order Confirmed - Order #${order._id}`,
+                            html: mailHtml
+                        });
+                        
+                        if (result.success) {
+                            order.orderConfirmationSent = true;
+                            await order.save();
+                            console.log('[order] ✅ Order confirmation email sent for order', order._id);
+                        } else {
+                            console.error('[order] ❌ Failed to send order confirmation email for order', order._id, result.error?.message);
+                        }
+                    } catch (mailErr) {
+                        console.error('[order] ❌ Unexpected error sending order confirmation email for order', order._id, mailErr?.message || mailErr);
+                    }
+                } catch (emailErr) {
+                    console.error('[order] ❌ Error preparing order confirmation email for order', order._id, emailErr?.message || emailErr);
                 }
             } else {
                 console.warn('[order] No customer email available for order', order._id, 'skipping order confirmation email');
@@ -468,17 +486,23 @@ const updateOrderPaymentStatus = asyncHandler(async (req, res) => {
 
                     const html = paymentConfirmationMailBody(paymentDetails);
                     try {
-                        await mailTransporter.sendMail({
+                        const result = await sendEmailWithRetry({
                             from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
                             to: customerEmail,
                             subject: `Payment Confirmed - Order #${order._id}`,
                             html
                         });
-                        // Mark as sent to avoid duplicates
-                        order.paymentConfirmationSent = true;
-                        await order.save();
+                        
+                        if (result.success) {
+                            // Mark as sent to avoid duplicates
+                            order.paymentConfirmationSent = true;
+                            await order.save();
+                            console.log('[order] ✅ Payment confirmation email sent for order', order._id);
+                        } else {
+                            console.error('[order] ❌ Failed to send payment confirmation email for order', order._id, result.error?.message);
+                        }
                     } catch (emailErr) {
-                        console.error('[order] Failed to send payment confirmation email for order', order._id, emailErr?.message || emailErr);
+                        console.error('[order] ❌ Unexpected error sending payment confirmation email for order', order._id, emailErr?.message || emailErr);
                     }
                 } else {
                     console.warn('[order] No customer email found for order', order._id, 'skipping payment confirmation email');

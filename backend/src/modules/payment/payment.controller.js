@@ -9,7 +9,7 @@ import { ApiResponse } from "../../core/utils/api-response.js";
 import { handlePayFastWebhook } from "./services/payfast.service.js";
 import { handleJazzCashWebhook } from "./services/jazzcash.service.js";
 import { handleEasyPaisaWebhook } from "./services/easypaisa.service.js";
-import { mailTransporter } from "../../shared/helpers/mail.helper.js";
+import { mailTransporter, sendEmailWithRetry } from "../../shared/helpers/mail.helper.js";
 import { paymentConfirmationMailBody } from "../../shared/constants/mail.constant.js";
 
 //-------------------- CREATE PAYMENT --------------------//
@@ -245,17 +245,26 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
                             transactionId: null // Manual payments don't have transaction IDs
                         };
 
-                        await mailTransporter.sendMail({
-                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
-                            to: customerEmail,
-                            subject: `Payment Confirmed - Order #${paymentEmailDetails.orderId} - FlexLeather`,
-                            html: paymentConfirmationMailBody(paymentEmailDetails)
-                        });
-                        console.log(`✅ Payment confirmation email sent to ${customerEmail} for order ${populatedOrder._id}`);
+                        try {
+                            const result = await sendEmailWithRetry({
+                                from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                                to: customerEmail,
+                                subject: `Payment Confirmed - Order #${paymentEmailDetails.orderId} - FlexLeather`,
+                                html: paymentConfirmationMailBody(paymentEmailDetails)
+                            });
+                            
+                            if (result.success) {
+                                console.log(`✅ Payment confirmation email sent to ${customerEmail} for order ${populatedOrder._id}`);
+                            } else {
+                                console.error(`❌ Failed to send payment confirmation email to ${customerEmail}:`, result.error?.message);
+                            }
+                        } catch (emailError) {
+                            console.error(`❌ Unexpected error sending payment confirmation email:`, emailError.message);
+                            // Email failure should not affect payment status update
+                        }
                     }
-                } catch (emailError) {
-                    console.error(`❌ Failed to send payment confirmation email:`, emailError.message);
-                    // Email failure should not affect payment status update
+                } catch (err) {
+                    console.error('[payment] Error sending payment confirmation email:', err?.message || err);
                 }
             });
         }
