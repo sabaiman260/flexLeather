@@ -155,7 +155,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://www.facebook.com/profile.php?id=61585260157289"
+              href="https://www.facebook.com/profile.php?id=61584596186889"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Facebook"
@@ -165,7 +165,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://www.youtube.com/@flexleather"
+              href="https://www.youtube.com/@FlexLeather-f2h"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="YouTube"
@@ -175,7 +175,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://www.tiktok.com/@flexleather5?lang=en"
+              href="https://www.tiktok.com/@flexleather.official.com"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="TikTok"
