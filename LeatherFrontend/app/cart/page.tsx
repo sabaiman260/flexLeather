@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/header'
@@ -7,11 +8,19 @@ import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Minus } from 'lucide-react'
 import { useCart } from '@/components/cart-context'
+import { apiFetch } from '@/lib/api'
 
 export default function CartPage() {
   const { items: cartItems, totalPrice, updateQuantity, updateItemOption, removeFromCart, clearCart } = useCart()
+  const [shippingCost, setShippingCost] = useState(200)
 
-  const hasMissingOptions = cartItems.some(item => 
+  useEffect(() => {
+    apiFetch('/api/v1/settings')
+      .then(res => setShippingCost(res?.data?.shippingCost ?? 200))
+      .catch(() => {})
+  }, [])
+
+  const hasMissingOptions = cartItems.some(item =>
     (item.availableColors && item.availableColors.length > 0 && !item.selectedColor) ||
     (item.availableSizes && item.availableSizes.length > 0 && !item.selectedSize)
   )
@@ -104,7 +113,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Shipping</span>
-                    <span>PKR 200</span>
+                    <span>PKR {shippingCost.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Tax</span>
@@ -113,7 +122,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-lg font-serif mb-6">
                   <span>Total</span>
-                  <span>PKR {(totalPrice + 200).toLocaleString()}</span>
+                  <span>PKR {(totalPrice + shippingCost).toLocaleString()}</span>
                 </div>
                 <Link href={cartItems.length && !hasMissingOptions ? '/checkout' : '#'}>
                   <Button disabled={cartItems.length === 0 || hasMissingOptions} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">

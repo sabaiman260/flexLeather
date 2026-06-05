@@ -31,7 +31,13 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0)
   const [authLoadingTimeout, setAuthLoadingTimeout] = useState(false)
   const [hasAutoFilled, setHasAutoFilled] = useState(false)
-  const SHIPPING_COST = 200
+  const [shippingCost, setShippingCost] = useState(200)
+
+  useEffect(() => {
+    apiFetch('/api/v1/settings')
+      .then(res => setShippingCost(res?.data?.shippingCost ?? 200))
+      .catch(() => {})
+  }, [])
 
   // Timeout for auth loading to prevent infinite loading screen
   useEffect(() => {
@@ -91,7 +97,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const finalTotal = Math.max(0, totalPrice + SHIPPING_COST - discount)
+  const finalTotal = Math.max(0, totalPrice + shippingCost - discount)
 
   const placeOrder = async () => {
     // Validate that all items have required selections
@@ -369,7 +375,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>PKR {SHIPPING_COST}</span>
+                    <span>PKR {shippingCost.toLocaleString()}</span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-green-600">

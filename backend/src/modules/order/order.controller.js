@@ -10,10 +10,14 @@ import { ApiResponse } from "../../core/utils/api-response.js";
 import { mailTransporter, sendEmailWithRetry } from "../../shared/helpers/mail.helper.js";
 import { orderConfirmationMailBody, paymentConfirmationMailBody } from "../../shared/constants/mail.constant.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
+import Settings from "../../models/Settings.model.js";
 
 //-------------------- CREATE ORDER --------------------//
 const createOrder = asyncHandler(async (req, res) => {
-    const SHIPPING_COST = 200;
+    // Dynamic shipping from settings
+    const settingsDoc = await Settings.findOne();
+    const SHIPPING_COST = settingsDoc?.shippingCost ?? 200;
+
     const { items, guestDetails, paymentMethod } = req.body;
 
     console.log("📥 Received order request:", { items, guestDetails, paymentMethod });
@@ -59,7 +63,11 @@ const createOrder = asyncHandler(async (req, res) => {
             throw new ApiError(400, `Invalid size '${item.selectedSize}' for product: ${product.name}`);
         }
 
-        const price = product.price;
+        // Apply percentage discount if set
+        const discount = product.discount || 0;
+        const price = discount > 0
+            ? Math.round(product.price * (1 - discount / 100))
+            : product.price;
         const quantity = item.quantity || 1;
         calculatedTotal += price * quantity;
 
@@ -285,8 +293,27 @@ const createOrder = asyncHandler(async (req, res) => {
 const getUserOrders = asyncHandler(async (req, res) => {
     const orders = await Order.find({ buyer: req.user._id })
         .populate("buyer", "userName userEmail phoneNumber userAddress")
-        .sort({ createdAt: -1 });
-    return res.status(200).json(new ApiResponse(200, orders, "Orders fetched successfully"));
+        .populate("items.product", "name images")
+        .sort({ createdAt: -1 })
+        .lean();
+
+    // Generate signed image URLs for each product in each order
+    const ordersWithImages = await Promise.all(orders.map(async (order) => {
+        const items = await Promise.all((order.items || []).map(async (item) => {
+            const product = item.product || {};
+            const imageKeys = Array.isArray(product.images) ? product.images : [];
+            let imageUrl = null;
+            if (imageKeys.length > 0) {
+                try {
+                    imageUrl = await S3UploadHelper.getSignedUrl(imageKeys[0]);
+                } catch {}
+            }
+            return { ...item, product: { ...product, imageUrl } };
+        }));
+        return { ...order, items };
+    }));
+
+    return res.status(200).json(new ApiResponse(200, ordersWithImages, "Orders fetched successfully"));
 });
 
 //-------------------- GET ELIGIBLE ORDERS FOR REVIEW --------------------//
@@ -518,4 +545,39 @@ const updateOrderPaymentStatus = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, order, "Order payment updated successfully"));
 });
 
-export { createOrder, getUserOrders, getEligibleOrdersForReview, getOrder, getAllOrders, updateOrderStatus, updateOrderPaymentStatus };
+//-------------------- ADMIN: DELETE ORDER --------------------//
+const deleteOrder = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new ApiError(404, "Order not found");
+    await Order.deleteOne({ _id: order._id });
+    return res.status(200).json(new ApiResponse(200, null, "Order deleted successfully"));
+});
+
+//-------------------- CANCEL ORDER (Buyer - within 24 hours) --------------------//
+const cancelOrder = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) throw new ApiError(404, "Order not found");
+
+    // Only the buyer can cancel their own order
+    if (!order.buyer || order.buyer.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to cancel this order");
+    }
+
+    // Cannot cancel if already shipped, delivered, or cancelled
+    if (['shipped', 'delivered', 'cancelled'].includes(order.orderStatus)) {
+        throw new ApiError(400, `Order cannot be cancelled because it is already ${order.orderStatus}`);
+    }
+
+    // Enforce 24-hour cancellation window
+    const hoursSinceOrder = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceOrder > 24) {
+        throw new ApiError(400, "Order cancellation window has expired (24 hours)");
+    }
+
+    order.orderStatus = "cancelled";
+    await order.save();
+
+    return res.status(200).json(new ApiResponse(200, order, "Order cancelled successfully"));
+});
+
+export { createOrder, getUserOrders, getEligibleOrdersForReview, getOrder, getAllOrders, updateOrderStatus, updateOrderPaymentStatus, cancelOrder, deleteOrder };

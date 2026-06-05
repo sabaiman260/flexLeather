@@ -227,46 +227,37 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
         if (status === "success" && !wasAlreadyPaid &&
             (payment.method === "jazzcash" || payment.method === "easypaisa")) {
 
-            // Send email asynchronously (fire-and-forget)
-            setImmediate(async () => {
-                try {
-                    // Re-fetch order with populated buyer data
-                    const populatedOrder = await Order.findById(order._id).populate("buyer", "userName userEmail");
-                    const customerEmail = populatedOrder.buyer ? populatedOrder.buyer.userEmail : populatedOrder.guestDetails?.email;
-                    const customerName = populatedOrder.buyer ? populatedOrder.buyer.userName : populatedOrder.guestDetails?.fullName;
+            try {
+                const populatedOrder = await Order.findById(order._id).populate("buyer", "userName userEmail");
+                const customerEmail = populatedOrder.buyer ? populatedOrder.buyer.userEmail : populatedOrder.guestDetails?.email;
+                const customerName = populatedOrder.buyer ? populatedOrder.buyer.userName : populatedOrder.guestDetails?.fullName;
 
-                    if (customerEmail && customerName) {
-                        const paymentEmailDetails = {
-                            orderId: populatedOrder._id.toString().slice(-6),
-                            customerName,
-                            customerEmail,
-                            paymentMethod: payment.method,
-                            amount: payment.amount,
-                            transactionId: null // Manual payments don't have transaction IDs
-                        };
+                if (customerEmail && customerName) {
+                    const paymentEmailDetails = {
+                        orderId: populatedOrder._id.toString().slice(-6),
+                        customerName,
+                        customerEmail,
+                        paymentMethod: payment.method,
+                        amount: payment.amount,
+                        transactionId: null
+                    };
 
-                        try {
-                            const result = await sendEmailWithRetry({
-                                from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
-                                to: customerEmail,
-                                subject: `Payment Confirmed - Order #${paymentEmailDetails.orderId} - FlexLeather`,
-                                html: paymentConfirmationMailBody(paymentEmailDetails)
-                            });
-                            
-                            if (result.success) {
-                                console.log(`✅ Payment confirmation email sent to ${customerEmail} for order ${populatedOrder._id}`);
-                            } else {
-                                console.error(`❌ Failed to send payment confirmation email to ${customerEmail}:`, result.error?.message);
-                            }
-                        } catch (emailError) {
-                            console.error(`❌ Unexpected error sending payment confirmation email:`, emailError.message);
-                            // Email failure should not affect payment status update
-                        }
+                    const result = await sendEmailWithRetry({
+                        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                        to: customerEmail,
+                        subject: `Payment Confirmed - Order #${paymentEmailDetails.orderId} - FlexLeather`,
+                        html: paymentConfirmationMailBody(paymentEmailDetails)
+                    });
+
+                    if (result.success) {
+                        console.log(`✅ Payment confirmation email sent to ${customerEmail} for order ${populatedOrder._id}`);
+                    } else {
+                        console.error(`❌ Failed to send payment confirmation email to ${customerEmail}:`, result.error?.message);
                     }
-                } catch (err) {
-                    console.error('[payment] Error sending payment confirmation email:', err?.message || err);
                 }
-            });
+            } catch (emailErr) {
+                console.error('[payment] Error sending payment confirmation email:', emailErr?.message || emailErr);
+            }
         }
     }
 

@@ -5,6 +5,7 @@ const reviewSchema = new mongoose.Schema({
     order: { type: mongoose.Schema.Types.ObjectId, ref: "Order" }, // Made optional for backward compatibility
     product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     rating: { type: Number, min: 1, max: 5, required: true },
+    title: { type: String },
     comment: { type: String },
     images: [{ type: String }],
     isApproved: { type: Boolean, default: false }, // admin approval

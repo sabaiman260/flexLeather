@@ -293,8 +293,8 @@ export default function AdminProductsPage() {
                 <input className="w-full border p-2 rounded focus:border-black outline-none" type="number" placeholder="0" value={form.price ?? ''} onChange={e => setForm({ ...form, price: e.target.value === '' ? undefined : Number(e.target.value) })} />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium uppercase text-gray-500">Discount (PKR)</label>
-                <input className="w-full border p-2 rounded focus:border-black outline-none" type="number" placeholder="0" value={form.discount ?? ''} onChange={e => setForm({ ...form, discount: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                <label className="text-xs font-medium uppercase text-gray-500">Discount (%)</label>
+                <input className="w-full border p-2 rounded focus:border-black outline-none" type="number" placeholder="0" min="0" max="100" value={form.discount ?? ''} onChange={e => setForm({ ...form, discount: e.target.value === '' ? undefined : Math.min(100, Math.max(0, Number(e.target.value))) })} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium uppercase text-gray-500">Stock</label>

@@ -8,7 +8,7 @@ import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 
 //-------------------- CREATE REVIEW --------------------//
 const createReview = asyncHandler(async (req, res) => {
-    const { product, rating, comment } = req.body;
+    const { product, rating, title, comment } = req.body;
     // Support guest reviews: if req.user exists treat as logged-in user, otherwise guest
     const isGuest = !req.user;
     const userId = req.user ? req.user._id : null;
@@ -40,6 +40,7 @@ const createReview = asyncHandler(async (req, res) => {
         user: userId,
         product,
         rating,
+        title,
         comment,
         images,
         isApproved: false, // admin will approve

@@ -190,13 +190,12 @@ const userForgotPasswordMailBody = (name, url) => {
 };
 
 /**
- * Order Confirmation Email HTML
+ * Order Confirmation Email HTML - FlexLeather Themed
  */
 const orderConfirmationMailBody = (orderDetails) => {
     const {
         orderId,
         customerName,
-        customerEmail,
         items,
         subtotal,
         shipping,
@@ -205,86 +204,211 @@ const orderConfirmationMailBody = (orderDetails) => {
         shippingAddress
     } = orderDetails;
 
-    const itemsList = items.map(item =>
+    const itemRows = (items || []).map(item =>
         `<tr>
-            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.productName}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">PKR ${item.price.toLocaleString()}</td>
+            <td style="padding: 12px 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333;">${item.productName}</td>
+            <td style="padding: 12px 10px; border-bottom: 1px solid #f0f0f0; text-align: center; font-size: 14px; color: #555;">${item.quantity}</td>
+            <td style="padding: 12px 10px; border-bottom: 1px solid #f0f0f0; text-align: right; font-size: 14px; color: #333; font-weight: 500;">PKR ${Number(item.price).toLocaleString()}</td>
         </tr>`
     ).join('');
 
-    const email = {
-        body: {
-            name: customerName,
-            intro: `Thank you for your order! Your order #${orderId} has been successfully placed.`,
-            table: {
-                data: [
-                    {
-                        'Order ID': orderId,
-                        'Payment Method': paymentMethod.toUpperCase(),
-                        'Total Amount': `PKR ${total.toLocaleString()}`,
-                        'Shipping Address': shippingAddress
-                    }
-                ]
-            },
-            action: paymentMethod === 'cod' ? null : {
-                instructions: paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa'
-                    ? `Please complete your ${paymentMethod.toUpperCase()} payment using the details provided. Your order will be processed once payment is confirmed.`
-                    : 'Your payment is being processed. You will receive a confirmation email once payment is verified.',
-                button: {
-                    color: '#22BC66',
-                    text: 'View Order Status',
-                    link: `${process.env.CLIENT_URL || 'http://localhost:3000'}/order-confirmation?order=${orderId}`
-                }
-            },
-            outro: 'If you have any questions about your order, please contact our support team.'
-        }
-    };
+    const paymentLabel = paymentMethod === 'cod' ? 'Cash on Delivery'
+        : paymentMethod === 'jazzcash' ? 'JazzCash'
+        : paymentMethod === 'easypaisa' ? 'EasyPaisa'
+        : paymentMethod.toUpperCase();
 
-    return mailGenerator.generate(email);
+    const paymentNote = paymentMethod === 'cod'
+        ? `<div style="background:#f0f9f0;border-left:4px solid #4caf50;padding:14px 16px;margin-top:20px;border-radius:0 4px 4px 0;font-size:13px;color:#2d6a2d;">
+               <strong>Cash on Delivery:</strong> Please have the exact amount ready at the time of delivery.
+           </div>`
+        : `<div style="background:#fff8e1;border-left:4px solid #8B6914;padding:14px 16px;margin-top:20px;border-radius:0 4px 4px 0;font-size:13px;color:#5a4000;">
+               <strong>Payment Pending:</strong> Your order will be processed once your ${paymentLabel} payment is confirmed.
+           </div>`;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation - FlexLeather</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;color:#333;">
+    <div style="background:#f5f5f5;padding:40px 20px;">
+        <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#2c2c2c 0%,#1a1a1a 100%);color:#fff;padding:40px 30px;text-align:center;">
+                <h1 style="margin:0;font-size:28px;font-weight:300;letter-spacing:2px;">FLEXLEATHER</h1>
+                <p style="margin:6px 0 0;font-size:13px;opacity:0.85;letter-spacing:1px;">PREMIUM LEATHER GOODS</p>
+            </div>
+
+            <!-- Success Badge -->
+            <div style="background:#8B6914;padding:16px 30px;text-align:center;">
+                <p style="margin:0;color:#fff;font-size:15px;font-weight:500;letter-spacing:0.5px;">&#10003; Order Placed Successfully</p>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:36px 30px;">
+                <p style="font-size:16px;color:#2c2c2c;margin:0 0 8px;">Hi <strong>${customerName}</strong>,</p>
+                <p style="font-size:14px;color:#555;margin:0 0 28px;">Thank you for shopping with FlexLeather! We've received your order and are getting it ready for you.</p>
+
+                <!-- Order Meta -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                    <tr>
+                        <td style="background:#f9f9f9;border-radius:4px;padding:14px 16px;border:1px solid #eee;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.8px;">Order ID</td>
+                                    <td style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.8px;text-align:right;">Payment Method</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size:15px;color:#2c2c2c;font-weight:600;padding-top:4px;">#${orderId}</td>
+                                    <td style="font-size:15px;color:#8B6914;font-weight:600;padding-top:4px;text-align:right;">${paymentLabel}</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Items Table -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:4px;overflow:hidden;margin-bottom:4px;">
+                    <thead>
+                        <tr style="background:#2c2c2c;">
+                            <th style="padding:12px 10px;font-size:12px;font-weight:500;color:#fff;text-align:left;text-transform:uppercase;letter-spacing:0.8px;">Product</th>
+                            <th style="padding:12px 10px;font-size:12px;font-weight:500;color:#fff;text-align:center;text-transform:uppercase;letter-spacing:0.8px;">Qty</th>
+                            <th style="padding:12px 10px;font-size:12px;font-weight:500;color:#fff;text-align:right;text-transform:uppercase;letter-spacing:0.8px;">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemRows}
+                    </tbody>
+                </table>
+
+                <!-- Totals -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:0;border:1px solid #eee;border-top:none;border-radius:0 0 4px 4px;overflow:hidden;">
+                    <tr>
+                        <td style="padding:10px 10px;font-size:13px;color:#777;border-bottom:1px solid #f0f0f0;">Subtotal</td>
+                        <td style="padding:10px 10px;font-size:13px;color:#777;text-align:right;border-bottom:1px solid #f0f0f0;">PKR ${Number(subtotal || total).toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 10px;font-size:13px;color:#777;border-bottom:1px solid #f0f0f0;">Shipping</td>
+                        <td style="padding:10px 10px;font-size:13px;color:#777;text-align:right;border-bottom:1px solid #f0f0f0;">${Number(shipping || 0) === 0 ? 'Free' : 'PKR ' + Number(shipping).toLocaleString()}</td>
+                    </tr>
+                    <tr style="background:#f9f9f9;">
+                        <td style="padding:12px 10px;font-size:15px;color:#2c2c2c;font-weight:600;">Total</td>
+                        <td style="padding:12px 10px;font-size:15px;color:#8B6914;font-weight:700;text-align:right;">PKR ${Number(total).toLocaleString()}</td>
+                    </tr>
+                </table>
+
+                <!-- Shipping Address -->
+                <div style="margin-top:24px;padding:14px 16px;background:#f9f9f9;border:1px solid #eee;border-radius:4px;">
+                    <p style="margin:0 0 4px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.8px;">Shipping Address</p>
+                    <p style="margin:0;font-size:14px;color:#333;">${shippingAddress || 'N/A'}</p>
+                </div>
+
+                ${paymentNote}
+
+                <div style="height:1px;background:#e0e0e0;margin:28px 0;"></div>
+                <p style="font-size:13px;color:#777;margin:0;">Questions about your order? Reply to this email or contact us at <a href="mailto:flexleather.official@gmail.com" style="color:#8B6914;text-decoration:none;">flexleather.official@gmail.com</a></p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#fafafa;padding:28px 30px;text-align:center;border-top:1px solid #e0e0e0;">
+                <p style="font-size:12px;color:#999;margin:0;">&copy; 2026 FlexLeather. All rights reserved.</p>
+                <p style="font-size:12px;color:#aaa;margin:6px 0 0;">This is an automated message, please do not reply directly.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
 };
 
 /**
- * Payment Confirmation Email HTML
+ * Payment Confirmation Email HTML - FlexLeather Themed
  */
 const paymentConfirmationMailBody = (paymentDetails) => {
     const {
         orderId,
         customerName,
-        customerEmail,
         paymentMethod,
         amount,
         transactionId
     } = paymentDetails;
 
-    const email = {
-        body: {
-            name: customerName,
-            intro: `Great news! Your payment for order #${orderId} has been confirmed.`,
-            table: {
-                data: [
-                    {
-                        'Order ID': orderId,
-                        'Payment Method': paymentMethod.toUpperCase(),
-                        'Amount Paid': `PKR ${amount.toLocaleString()}`,
-                        'Transaction ID': transactionId || 'N/A',
-                        'Status': 'PAID'
-                    }
-                ]
-            },
-            action: {
-                instructions: 'Your order is now being processed. You can track your order status below.',
-                button: {
-                    color: '#22BC66',
-                    text: 'Track Your Order',
-                    link: `${process.env.CLIENT_URL || 'http://localhost:3000'}/order-confirmation?order=${orderId}`
-                }
-            },
-            outro: 'Thank you for choosing FlexLeather! We appreciate your business.'
-        }
-    };
+    const paymentLabel = paymentMethod === 'jazzcash' ? 'JazzCash'
+        : paymentMethod === 'easypaisa' ? 'EasyPaisa'
+        : paymentMethod.toUpperCase();
 
-    return mailGenerator.generate(email);
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmed - FlexLeather</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;color:#333;">
+    <div style="background:#f5f5f5;padding:40px 20px;">
+        <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#2c2c2c 0%,#1a1a1a 100%);color:#fff;padding:40px 30px;text-align:center;">
+                <h1 style="margin:0;font-size:28px;font-weight:300;letter-spacing:2px;">FLEXLEATHER</h1>
+                <p style="margin:6px 0 0;font-size:13px;opacity:0.85;letter-spacing:1px;">PREMIUM LEATHER GOODS</p>
+            </div>
+
+            <!-- Success Badge -->
+            <div style="background:#4caf50;padding:16px 30px;text-align:center;">
+                <p style="margin:0;color:#fff;font-size:15px;font-weight:500;letter-spacing:0.5px;">&#10003; Payment Confirmed</p>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:36px 30px;">
+                <p style="font-size:16px;color:#2c2c2c;margin:0 0 8px;">Hi <strong>${customerName}</strong>,</p>
+                <p style="font-size:14px;color:#555;margin:0 0 28px;">Great news! Your payment has been received and confirmed. We're now processing your order.</p>
+
+                <!-- Payment Details Card -->
+                <div style="background:#f9f9f9;border:1px solid #eee;border-radius:4px;overflow:hidden;margin-bottom:24px;">
+                    <div style="background:#2c2c2c;padding:12px 16px;">
+                        <p style="margin:0;font-size:12px;color:#ccc;text-transform:uppercase;letter-spacing:0.8px;">Payment Details</p>
+                    </div>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding:12px 16px;font-size:13px;color:#777;border-bottom:1px solid #f0f0f0;">Order ID</td>
+                            <td style="padding:12px 16px;font-size:13px;color:#2c2c2c;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">#${orderId}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px 16px;font-size:13px;color:#777;border-bottom:1px solid #f0f0f0;">Payment Method</td>
+                            <td style="padding:12px 16px;font-size:13px;color:#8B6914;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${paymentLabel}</td>
+                        </tr>
+                        ${transactionId ? `<tr>
+                            <td style="padding:12px 16px;font-size:13px;color:#777;border-bottom:1px solid #f0f0f0;">Transaction ID</td>
+                            <td style="padding:12px 16px;font-size:13px;color:#333;text-align:right;border-bottom:1px solid #f0f0f0;">${transactionId}</td>
+                        </tr>` : ''}
+                        <tr style="background:#fff8e1;">
+                            <td style="padding:14px 16px;font-size:15px;color:#2c2c2c;font-weight:600;">Amount Paid</td>
+                            <td style="padding:14px 16px;font-size:16px;color:#8B6914;font-weight:700;text-align:right;">PKR ${Number(amount).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Status -->
+                <div style="background:#f0f9f0;border-left:4px solid #4caf50;padding:14px 16px;border-radius:0 4px 4px 0;font-size:13px;color:#2d6a2d;margin-bottom:24px;">
+                    <strong>Order Status:</strong> Your order is now being processed and will be dispatched shortly.
+                </div>
+
+                <div style="height:1px;background:#e0e0e0;margin:28px 0;"></div>
+                <p style="font-size:13px;color:#777;margin:0;">Questions? Contact us at <a href="mailto:flexleather.official@gmail.com" style="color:#8B6914;text-decoration:none;">flexleather.official@gmail.com</a></p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#fafafa;padding:28px 30px;text-align:center;border-top:1px solid #e0e0e0;">
+                <p style="font-size:12px;color:#999;margin:0;">&copy; 2026 FlexLeather. All rights reserved.</p>
+                <p style="font-size:12px;color:#aaa;margin:6px 0 0;">Thank you for choosing FlexLeather!</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
 };
 
 export { userVerificationMailBody, userForgotPasswordMailBody, orderConfirmationMailBody, paymentConfirmationMailBody };

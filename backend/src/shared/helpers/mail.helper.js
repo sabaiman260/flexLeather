@@ -34,20 +34,21 @@ dotenv.config();
  */
 const mailTransporter = nodemailer.createTransport({
     host: process.env.BREVO_SMTP_HOST || "smtp-relay.brevo.com",
-    port: Number(process.env.BREVO_SMTP_PORT) || 587, // Use 587 for TLS
-    secure: false, // TLS - set to false for port 587
+    port: Number(process.env.BREVO_SMTP_PORT) || 587,
+    secure: false,
     auth: {
         user: process.env.BREVO_SMTP_USER || process.env.MAIL_USERNAME,
         pass: process.env.BREVO_SMTP_PASS || process.env.MAIL_PASSWORD,
     },
     tls: {
-        ciphers: 'SSLv3',
         rejectUnauthorized: false,
     },
-    // Brevo specific settings
-    pool: true, // Use connection pooling
+    pool: true,
     maxConnections: 5,
     maxMessages: 100,
+    socketTimeout: 30000,
+    greetingTimeout: 15000,
+    connectionTimeout: 15000,
 });
 
 /**
@@ -135,9 +136,9 @@ export const testEmailConnection = async () => {
 const mailGenerator = new Mailgen({
     theme: "default",
     product: {
-        name: "E - Commerce",
+        name: "FlexLeather",
         link: process.env.CLIENT_URL || "http://localhost:3000",
-        copyright: `© ${new Date().getFullYear()} E - Commerce. All rights reserved.`,
+        copyright: `© 2026 FlexLeather. All rights reserved.`,
     },
 });
 
