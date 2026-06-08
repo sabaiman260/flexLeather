@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { pushGtmEcommerceEvent } from '@/lib/gtm'
 import { useAuth } from '@/components/auth-provider'
 
 type CartItem = {
@@ -92,7 +93,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // BUT removeFromCart uses only 'id'. This needs fix.
       // We'll update removeFromCart to use index or unique key? 
       // Let's attach a unique _cartId to each item to be safe.
-      return [...prev, { ...item, quantity: qty, _cartId: Date.now() + Math.random().toString() } as CartItem]
+      const cartItem = { ...item, quantity: qty, _cartId: Date.now() + Math.random().toString() } as CartItem & { _cartId: string }
+      // Fire GTM AddToCart event (non-blocking)
+      try {
+        pushGtmEcommerceEvent('AddToCart', {
+          actionField: {
+            id: cartItem.id,
+            value: cartItem.price * cartItem.quantity,
+            revenue: cartItem.price * cartItem.quantity,
+            source: typeof window !== 'undefined' ? window.location.pathname : null
+          },
+          items: [
+            {
+              item_id: cartItem.id,
+              item_name: cartItem.name,
+              price: cartItem.price,
+              quantity: cartItem.quantity,
+              discount: cartItem.discount || 0
+            }
+          ]
+        })
+      } catch (err) {}
+
+      return [...prev, cartItem]
     })
   }
 

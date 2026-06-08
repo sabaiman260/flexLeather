@@ -113,7 +113,7 @@ export default function AdminBuyersPage() {
           placeholder="Search by name, email, or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full border border-border px-4 py-2 text-sm outline-none focus:border-accent transition"
+          className="w-full border border-border px-4 py-2 text-sm outline-none focus:border-gray-300 transition"
         />
       </div>
 

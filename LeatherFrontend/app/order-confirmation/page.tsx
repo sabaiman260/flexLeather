@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { pushGtmEcommerceEvent } from '@/lib/gtm'
 import Link from 'next/link'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
@@ -18,6 +19,31 @@ export default function OrderConfirmationPage() {
       setOrder(null)
     }
   }, [])
+
+  // Push purchase event when order becomes available
+  useEffect(() => {
+    if (!order) return
+    try {
+      pushGtmEcommerceEvent('purchase', {
+        actionField: {
+          id: order.id || `order_${Date.now()}`,
+          value: order.total || 0,
+          revenue: order.total || 0,
+          shipping: order.shipping || null,
+          coupon: order.coupon || null,
+          source: typeof window !== 'undefined' ? window.location.pathname : null
+        },
+        items: (order.items || []).map((i: any) => ({
+          item_id: i.id,
+          item_name: i.name,
+          price: i.price,
+          quantity: i.quantity
+        }))
+      })
+    } catch (err) {
+      // ignore
+    }
+  }, [order])
   return (
     <>
       <Header />

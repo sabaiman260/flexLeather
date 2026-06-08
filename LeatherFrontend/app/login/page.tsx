@@ -251,7 +251,7 @@ export default function LoginPage() {
                 <label className="block text-sm font-light mb-2">Email Address</label>
                 <input
                   type="email"
-                  className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition"
+                  className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -263,7 +263,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-10"
+                    className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition pr-10"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

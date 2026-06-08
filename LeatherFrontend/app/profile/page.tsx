@@ -192,19 +192,19 @@ export default function ProfilePage() {
               <div className="md:col-span-2 border border-border p-6 rounded-lg space-y-4 bg-card">
                 <div>
                   <label className="block text-sm mb-2">Name</label>
-                  <input name="userName" value={form.userName} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
+                  <input name="userName" value={form.userName} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition rounded-md" />
                 </div>
                 <div>
                   <label className="block text-sm mb-2">Email</label>
-                  <input name="userEmail" value={form.userEmail} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
+                  <input name="userEmail" value={form.userEmail} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition rounded-md" />
                 </div>
                 <div>
                   <label className="block text-sm mb-2">Phone</label>
-                  <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md" />
+                  <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition rounded-md" />
                 </div>
                 <div>
                   <label className="block text-sm mb-2">Address</label>
-                  <textarea name="userAddress" value={form.userAddress} onChange={onChange} placeholder="Enter your address" className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition rounded-md min-h-24" />
+                  <textarea name="userAddress" value={form.userAddress} onChange={onChange} placeholder="Enter your address" className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition rounded-md min-h-24" />
                 </div>
                 <div className="pt-2 flex gap-3">
                   <Button onClick={onSave} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>

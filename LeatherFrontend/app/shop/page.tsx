@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
 import { ShoppingCart } from 'lucide-react'
 import { apiFetch, BackendProduct } from '@/lib/api'
+import { pushGtmEcommerceEvent } from '@/lib/gtm'
 
 type UIProduct = {
   id: string
@@ -115,6 +116,28 @@ export default function ShopPage() {
       return priceMatch && searchMatch
     })
   }, [baseProducts, priceRange, queryParam])
+
+  // Push view_item_list (shop listing) whenever filtered products change
+  useEffect(() => {
+    if (!filteredProducts || filteredProducts.length === 0) return
+    try {
+      pushGtmEcommerceEvent('view_item_list', {
+        actionField: {
+          id: `list_${Date.now()}`,
+          value: filteredProducts.reduce((s, p) => s + (p.price || 0), 0),
+          revenue: filteredProducts.reduce((s, p) => s + (p.price || 0), 0),
+          source: typeof window !== 'undefined' ? window.location.pathname : null
+        },
+        items: filteredProducts.map(p => ({
+          item_id: p.id,
+          item_name: p.name,
+          price: p.price
+        }))
+      })
+    } catch (err) {
+      // ignore
+    }
+  }, [filteredProducts])
 
   return (
     <>

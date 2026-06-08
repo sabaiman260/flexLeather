@@ -10,6 +10,7 @@ import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/lib/api'
+import { pushGtmEcommerceEvent } from '@/lib/gtm'
 import { toast } from 'sonner'
 
 export default function CheckoutPage() {
@@ -172,6 +173,27 @@ export default function CheckoutPage() {
     }
 
     try {
+      // Fire InitiateCheckout event (non-blocking)
+      try {
+        pushGtmEcommerceEvent('InitiateCheckout', {
+          actionField: {
+            id: `chk_${Date.now()}`,
+            value: finalTotal,
+            revenue: finalTotal,
+            shipping: shippingCost || null,
+            coupon: coupon || null,
+            source: typeof window !== 'undefined' ? window.location.pathname : null
+          },
+          items: items.map(i => ({
+            item_id: i.id,
+            item_name: i.name,
+            price: i.price,
+            quantity: i.quantity
+          }))
+        })
+      } catch (err) {
+        // ignore analytics errors
+      }
       const res = await apiFetch('/api/v1/orders', {
         method: 'POST',
         body: JSON.stringify(requestBody)
@@ -243,8 +265,56 @@ export default function CheckoutPage() {
 
     } catch (e: any) {
       console.error('Place order error:', e)
-      const friendly = e?.message || 'Failed to place order. Please try again.'
-      toast.error(friendly)
+
+      // Build a friendly error message for users from various backend error shapes
+      const defaultMsg = 'Failed to place order. Please check your information and try again.'
+
+      const extractMessages = (err: any): string[] => {
+        try {
+          // Common ApiError shape from backend: { message, errors: [ { field, message, path } ] }
+          if (err?.body?.errors && Array.isArray(err.body.errors)) {
+            return err.body.errors.map((it: any) => it.message || (it.field ? `${it.field}: ${it.message}` : JSON.stringify(it)))
+          }
+
+          // apiFetch attaches details or errors on the thrown error
+          if (err?.details && Array.isArray(err.details)) {
+            return err.details.map((it: any) => it.message || (it.field ? `${it.field}: ${it.message}` : JSON.stringify(it)))
+          }
+
+          // Some errors include a body with a data.errors array
+          if (err?.body?.data?.errors && Array.isArray(err.body.data.errors)) {
+            return err.body.data.errors.map((it: any) => it.message || JSON.stringify(it))
+          }
+
+          // If message contains a JSON array (some validation implementations), attempt to parse
+          if (typeof err?.message === 'string') {
+            const m = err.message
+            const jsonMatch = m.match(/\[\{[\s\S]*\}\]/)
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0])
+                if (Array.isArray(parsed)) return parsed.map((it: any) => it.message || JSON.stringify(it))
+              } catch {}
+            }
+          }
+
+          // Fallback: single message string
+          if (typeof err?.message === 'string' && err.message.trim()) return [err.message]
+        } catch (inner) {
+          // ignore parsing errors
+        }
+        return []
+      }
+
+      const msgs = extractMessages(e)
+      const friendly = msgs.length ? msgs.join('; ') : (e?.message || defaultMsg)
+      // Normalize common backend phrasing to user-friendly English
+      const normalized = friendly
+        .replace(/Validation failed[:\-]?\s*/i, '')
+        .replace(/\[|\]|\{|\}/g, '')
+        .replace(/\s*"?path"?:\s*\[[^\]]*\],?/gi, '')
+
+      toast.error(normalized || defaultMsg)
     }
   }
 
@@ -276,7 +346,7 @@ export default function CheckoutPage() {
                         type="text"
                         name={label.toLowerCase().replace(' ', '-')}
                         placeholder={`Enter ${label.toLowerCase()}`}
-                        className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition"
+                        className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                         value={value}
                         onChange={(e) => setter(e.target.value)}
                         autoComplete={label === 'Full Name' ? 'name' : label === 'Email' ? 'email' : label === 'Phone' ? 'tel' : 'address-level1'}
@@ -323,7 +393,7 @@ export default function CheckoutPage() {
                       value={transactionId}
                       onChange={e => setTransactionId(e.target.value)}
                       placeholder="Enter transaction or reference ID after payment"
-                      className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition"
+                      className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                     />
                     <p className="text-xs opacity-70 mt-2">If you already completed payment via your mobile app, enter the transaction/reference ID here to speed verification.</p>
                   </div>
@@ -366,7 +436,7 @@ export default function CheckoutPage() {
                     value={coupon} 
                     onChange={e => setCoupon(e.target.value)} 
                     placeholder="Coupon Code" 
-                    className="border border-border px-3 py-2 text-sm flex-1 outline-none focus:border-accent"
+                    className="border border-border px-3 py-2 text-sm flex-1 outline-none focus:border-gray-300"
                   />
                   <Button onClick={applyCoupon} variant="outline" size="sm">Apply</Button>
                 </div>

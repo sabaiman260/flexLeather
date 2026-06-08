@@ -61,7 +61,7 @@ export default function ResetForm({ token }: { token: string }) {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-10"
+                  className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -81,7 +81,7 @@ export default function ResetForm({ token }: { token: string }) {
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   required
-                  className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-accent transition pr-10"
+                  className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition pr-10"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                 />

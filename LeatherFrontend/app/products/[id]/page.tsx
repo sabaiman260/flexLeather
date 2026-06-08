@@ -11,6 +11,7 @@ import FeaturedProducts from '@/components/featured-products'
 import { useCart } from '@/components/cart-context'
 import { Heart, ShoppingCart, Minus, Plus, Star } from 'lucide-react'
 import { apiFetch, API_BASE_URL } from '@/lib/api'
+import { pushGtmEcommerceEvent } from '@/lib/gtm'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
@@ -129,6 +130,34 @@ export default function ProductDetail() {
       }
     })()
   }, [productId])
+
+  // Fire view_item GTM event when product details are available
+  useEffect(() => {
+    if (!product) return
+    try {
+      pushGtmEcommerceEvent('view_item', {
+        actionField: {
+          id: product.id,
+          value: product.price,
+          revenue: product.price,
+          shipping: null,
+          coupon: null,
+          source: typeof window !== 'undefined' ? window.location.pathname : null
+        },
+        items: [
+          {
+            item_id: product.id,
+            item_name: product.name,
+            price: product.price,
+            discount: product.discount || 0,
+            category: product.category || null
+          }
+        ]
+      })
+    } catch (err) {
+      // swallow
+    }
+  }, [product])
 
   useEffect(() => {
     if (product && product.images && product.images.length > 0) {
