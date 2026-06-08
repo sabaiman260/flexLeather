@@ -27,9 +27,10 @@ export default function ShopPage() {
   const queryParam = searchParams.get('q')
 
   const [products, setProducts] = useState<UIProduct[]>([])
-  const [favorites, setFavorites] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500])
   const [activeCategory, setActiveCategory] = useState<string>('')
+  const [showFilters, setShowFilters] = useState(false)
 
   const { addToCart } = useCart()
   const router = useRouter()
@@ -70,6 +71,8 @@ export default function ShopPage() {
         setProducts(mapped)
       } catch (err) {
         console.error('Failed to load products', err)
+      } finally {
+        setLoading(false)
       }
     })()
   }, [])
@@ -111,12 +114,6 @@ export default function ShopPage() {
     })
   }, [baseProducts, priceRange, queryParam])
 
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev =>
-      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-    )
-  }
-
   return (
     <>
       <Header />
@@ -131,10 +128,21 @@ export default function ShopPage() {
           </h1>
 
           <Suspense>
+            {/* Mobile filter toggle */}
+            <div className="md:hidden mb-4">
+              <button
+                onClick={() => setShowFilters(v => !v)}
+                className="flex items-center gap-2 text-sm border border-border px-4 py-2 rounded"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2" /></svg>
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 
               {/* FILTER SIDEBAR */}
-              <aside className="md:col-span-1">
+              <aside className={`md:col-span-1 ${showFilters ? 'block' : 'hidden'} md:block`}>
 
                 {/* CATEGORY LIST */}
                 <h3 className="text-sm font-light tracking-wide mb-4 uppercase opacity-75">
@@ -144,7 +152,7 @@ export default function ShopPage() {
                 <div className="space-y-2 mb-10">
                   <button
                     type="button"
-                    onClick={() => setActiveCategory('')}
+                    onClick={() => { setActiveCategory(''); setShowFilters(false) }}
                     className={`block text-sm font-light transition ${
                       activeCategory === ''
                         ? 'text-accent font-semibold'
@@ -158,7 +166,7 @@ export default function ShopPage() {
                     <button
                       key={cat.slug}
                       type="button"
-                      onClick={() => setActiveCategory(cat.slug)}
+                      onClick={() => { setActiveCategory(cat.slug); setShowFilters(false) }}
                       className={`block text-sm font-light transition ${
                         activeCategory === cat.slug
                           ? 'text-accent font-semibold'
@@ -194,11 +202,17 @@ export default function ShopPage() {
 
               {/* PRODUCTS GRID */}
               <section className="md:col-span-3">
+                {loading ? (
+                  <div className="flex justify-center items-center py-24">
+                    <div className="w-10 h-10 border-4 border-muted border-t-foreground rounded-full animate-spin" />
+                  </div>
+                ) : (
+                <>
                 <p className="mb-6 text-sm opacity-60">
-                  Showing {filteredProducts.length} products
+                  Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                   {filteredProducts.map(p => (
                     <Link
                       key={p.id}
@@ -251,6 +265,8 @@ export default function ShopPage() {
                     </Link>
                   ))}
                 </div>
+                </>
+                )}
               </section>
 
             </div>

@@ -10,6 +10,7 @@ import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -107,23 +108,26 @@ export default function CheckoutPage() {
     )
 
     if (hasMissingOptions) {
-      alert('Some items in your cart are missing size or color options. Please return to cart and select them.')
+      toast.error('Some items are missing size or color selection. Please go back to cart and select them.')
       router.push('/cart')
       return
     }
 
-    if (!name || !email || !address || !city || !zip) {
-      alert('Please fill all shipping fields')
-      return
-    }
-    if (paymentMethod !== 'cod' && (!email || !phone)) {
-      alert('Email and phone are required for online payment')
+    if (!name.trim()) { toast.error('Please enter your full name.'); return }
+    if (!email.trim()) { toast.error('Please enter your email address.'); return }
+    if (!address.trim()) { toast.error('Please enter your shipping address.'); return }
+    if (!city.trim()) { toast.error('Please enter your city.'); return }
+    if (!zip.trim()) { toast.error('Please enter your ZIP / postal code.'); return }
+
+    const phoneRegex = /^[0-9]{11}$/
+    if (!phone.trim()) { toast.error('Please enter your phone number.'); return }
+    if (!phoneRegex.test(phone.trim())) {
+      toast.error('Phone number must be exactly 11 digits (e.g. 03001234567).')
       return
     }
 
-    // For JazzCash and EasyPaisa, transaction ID is mandatory
     if ((paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && !transactionId.trim()) {
-      alert('Please enter the Transaction/Reference ID from your payment confirmation')
+      toast.error('Please enter the Transaction / Reference ID from your payment confirmation.')
       return
     }
 
@@ -227,18 +231,10 @@ export default function CheckoutPage() {
           document.body.appendChild(form);
           form.submit();
       } else if (paymentRes?.type === 'api') {
-          // Show instructions (legacy API flow)
-          alert(`Payment Initiated! ${paymentRes.message}\nTransaction ID: ${paymentRes.transactionId}`);
+          toast.success('Payment initiated successfully!')
           router.push('/order-confirmation');
       } else if (paymentRes?.type === 'manual') {
-          // Manual payment instruction returned (JazzCash / EasyPaisa / PayFast)
-          const instr = paymentRes.instructions || paymentRes.message || '';
-          if (typeof instr === 'object' && instr.details) {
-            alert(`${instr.title || 'Manual Payment'}\n\n${instr.details}\n\n${instr.note || ''}`);
-          } else {
-            alert(`Manual Payment: ${instr}`);
-          }
-          // Keep consistent user flow: clear cart and go to confirmation page.
+          toast.success('Order placed! Please complete your payment to confirm.')
           router.push('/order-confirmation');
       } else {
           // COD or Success
@@ -247,9 +243,8 @@ export default function CheckoutPage() {
 
     } catch (e: any) {
       console.error('Place order error:', e)
-      const friendly = e?.message || 'Failed to place order'
-      const details = e?.details ? `\nDetails: ${JSON.stringify(e.details)}` : e?.body ? `\nBody: ${JSON.stringify(e.body)}` : ''
-      alert(friendly + details)
+      const friendly = e?.message || 'Failed to place order. Please try again.'
+      toast.error(friendly)
     }
   }
 
@@ -352,7 +347,15 @@ export default function CheckoutPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                        <p className="text-sm">PKR {item.price.toLocaleString()}</p>
+                        {item.discount && item.discount > 0 && item.originalPrice ? (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{item.discount}% OFF</span>
+                            <span className="text-xs text-muted-foreground line-through">PKR {item.originalPrice.toLocaleString()}</span>
+                            <span className="text-sm text-red-600 font-medium">PKR {item.price.toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <p className="text-sm">PKR {item.price.toLocaleString()}</p>
+                        )}
                       </div>
                     </div>
                   ))}

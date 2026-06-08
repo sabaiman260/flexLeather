@@ -51,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
         existingUser.userVerificationTokenExpiry = tokenExpiry;
         await existingUser.save();
 
-        const base = process.env.BASE_URL || "http://localhost:3000";
+        const base = process.env.BASE_URL || "http://localhost:4000";
         const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
 
         // Send verification email with retry logic (DO NOT fail if email fails)
@@ -170,7 +170,7 @@ const registerUser = asyncHandler(async (req, res) => {
     user.userVerificationTokenExpiry = tokenExpiry;
     await user.save();
 
-    const base = process.env.BASE_URL || "http://localhost:3000";
+    const base = process.env.BASE_URL || "http://localhost:4000";
     const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
 
     // 5️⃣ Send verification email with retry logic (DO NOT fail registration)

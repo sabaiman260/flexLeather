@@ -305,8 +305,28 @@ const searchProducts = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, productsWithUrls, "Product search results"));
 });
 
+// Admin: get ALL products including inactive
+const getAllProductsAdmin = asyncHandler(async (_req, res) => {
+  const products = await Product.find({}).populate("category", "name slug");
+
+  const productsWithUrls = await Promise.all(
+    products.map(async (p) => {
+      const keys = Array.isArray(p.images) ? p.images : [];
+      const imageUrls = await Promise.all(
+        keys.map((key) => S3UploadHelper.getSignedUrl(key))
+      );
+      return { ...p._doc, imageUrls };
+    })
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, productsWithUrls, "All products fetched (admin)"));
+});
+
 export {
   getAllProducts,
+  getAllProductsAdmin,
   getProductsByCategoryId,
   createProduct,
   updateProduct,

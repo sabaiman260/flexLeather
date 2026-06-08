@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
-import { Trash2, Plus, Minus } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useCart } from '@/components/cart-context'
 import { apiFetch } from '@/lib/api'
 
@@ -96,7 +96,15 @@ export default function CartPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-serif">PKR {(item.price * item.quantity).toLocaleString()}</div>
+                        {item.discount && item.discount > 0 && item.originalPrice ? (
+                          <>
+                            <div className="inline-block bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full mb-1">{item.discount}% OFF</div>
+                            <div className="text-xs text-muted-foreground line-through">PKR {(item.originalPrice * item.quantity).toLocaleString()}</div>
+                            <div className="font-serif text-red-600">PKR {(item.price * item.quantity).toLocaleString()}</div>
+                          </>
+                        ) : (
+                          <div className="font-serif">PKR {(item.price * item.quantity).toLocaleString()}</div>
+                        )}
                         <button onClick={() => removeFromCart((item as any)._cartId)} className="text-xs text-red-600 mt-2 flex items-center gap-2"><Trash2 className="w-4 h-4" />Remove</button>
                       </div>
                     </div>

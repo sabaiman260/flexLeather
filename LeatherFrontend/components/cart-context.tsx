@@ -7,6 +7,8 @@ type CartItem = {
   id: string
   name: string
   price: number
+  originalPrice?: number
+  discount?: number
   image?: string
   quantity: number
   selectedSize?: string

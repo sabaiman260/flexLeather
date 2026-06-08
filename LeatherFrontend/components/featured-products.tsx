@@ -71,7 +71,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
           {title || (category ? 'Related Products' : 'Featured Collection')}
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
           {products.map((product) => {
             const hasDiscount = product.discount && product.discount > 0
             const discountedPrice = hasDiscount

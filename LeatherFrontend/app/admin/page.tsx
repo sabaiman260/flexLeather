@@ -4,14 +4,16 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
-import { 
-  ShoppingBag, 
-  Users, 
-  CreditCard, 
-  MessageSquare, 
-  Package, 
-  DollarSign, 
-  Activity 
+import { toast } from 'sonner'
+import {
+  ShoppingBag,
+  Users,
+  CreditCard,
+  MessageSquare,
+  Package,
+  DollarSign,
+  Activity,
+  Truck
 } from 'lucide-react'
 
 export default function AdminHome() {
@@ -24,6 +26,9 @@ export default function AdminHome() {
     totalPendingReviews: 0,
     pendingPayments: 0
   })
+  const [shippingCost, setShippingCost] = useState<number>(200)
+  const [shippingInput, setShippingInput] = useState<string>('200')
+  const [savingShipping, setSavingShipping] = useState(false)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -34,8 +39,38 @@ export default function AdminHome() {
         console.error('Failed to load stats', e)
       }
     }
+    const fetchShipping = async () => {
+      try {
+        const res = await apiFetch('/api/v1/settings')
+        const cost = res?.data?.shippingCost ?? 200
+        setShippingCost(cost)
+        setShippingInput(String(cost))
+      } catch {}
+    }
     fetchStats()
+    fetchShipping()
   }, [])
+
+  const saveShipping = async () => {
+    const val = Number(shippingInput)
+    if (isNaN(val) || val < 0) {
+      toast.error('Please enter a valid shipping cost (0 or more).')
+      return
+    }
+    setSavingShipping(true)
+    try {
+      await apiFetch('/api/v1/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ shippingCost: val }),
+      })
+      setShippingCost(val)
+      toast.success(`Shipping cost updated to PKR ${val.toLocaleString()}`)
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to update shipping cost')
+    } finally {
+      setSavingShipping(false)
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -76,6 +111,36 @@ export default function AdminHome() {
           value={stats.pendingPayments} 
           icon={<CreditCard className="w-5 h-5 text-red-600" />} 
         />
+      </div>
+
+      {/* Shipping Cost */}
+      <div className="border border-border rounded-lg p-6 bg-card shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Truck className="w-5 h-5 text-blue-600" />
+          <h2 className="text-base font-medium">Shipping Cost</h2>
+          <span className="ml-auto text-sm text-muted-foreground">Currently: <strong>PKR {shippingCost.toLocaleString()}</strong></span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center border border-border rounded overflow-hidden flex-1 max-w-xs">
+            <span className="px-3 py-2 bg-muted text-sm text-muted-foreground border-r border-border">PKR</span>
+            <input
+              type="number"
+              min="0"
+              value={shippingInput}
+              onChange={e => setShippingInput(e.target.value)}
+              className="px-3 py-2 text-sm flex-1 outline-none bg-transparent"
+              placeholder="e.g. 200"
+            />
+          </div>
+          <button
+            onClick={saveShipping}
+            disabled={savingShipping}
+            className="px-5 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-60 transition"
+          >
+            {savingShipping ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">This amount is applied to every order at checkout across the entire store.</p>
       </div>
 
       {/* Quick Access */}

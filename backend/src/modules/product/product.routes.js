@@ -6,6 +6,7 @@ import { validate } from "../../core/middleware/validate.js";
 import { createProductSchema, updateProductSchema } from "../../shared/validators/product.validator.js";
 import {
   getAllProducts,
+  getAllProductsAdmin,
   getProductsByCategoryId,
   createProduct,
   updateProduct,
@@ -18,6 +19,7 @@ const productRouter = Router();
 
 // Public routes
 productRouter.get("/getAll", getAllProducts);
+productRouter.get("/getAllAdmin", isLoggedIn, isAdmin, getAllProductsAdmin);
 productRouter.get("/category/:categoryId", getProductsByCategoryId); // by ID
 productRouter.get("/get/:id", getProductDetail);
 productRouter.get("/search", searchProducts);

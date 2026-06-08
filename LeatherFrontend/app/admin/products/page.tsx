@@ -77,7 +77,7 @@ export default function AdminProductsPage() {
   const loadAllProducts = async () => {
     try {
       setLoading(true)
-      const res = await apiFetch('/api/v1/products/getAll')
+      const res = await apiFetch('/api/v1/products/getAllAdmin')
       setProducts(res?.data || [])
     } catch (e: any) {
       setError(e?.message || 'Failed to load products')
@@ -225,12 +225,13 @@ export default function AdminProductsPage() {
                 <th className="p-4 font-medium">Category</th>
                 <th className="p-4 font-medium">Price (PKR)</th>
                 <th className="p-4 font-medium">Stock</th>
+                <th className="p-4 font-medium">Status</th>
                 <th className="p-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {products.map(p => (
-                <tr key={p._id} className="hover:bg-muted/50 transition">
+                <tr key={p._id} className={`hover:bg-muted/50 transition ${p.isActive === false ? 'opacity-50' : ''}`}>
                   <td className="p-4">
                       <div className="relative w-12 h-12 bg-gray-100 rounded overflow-hidden p-1 flex items-center justify-center">
                         <Image src={p.imageUrls?.[0] || '/placeholder.jpg'} alt={p.name} fill className="object-contain" />
@@ -242,6 +243,11 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="p-4">PKR {p.price.toLocaleString()}</td>
                   <td className="p-4">{p.stock || 0}</td>
+                  <td className="p-4">
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${p.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {p.isActive !== false ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => openEditModal(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Edit">

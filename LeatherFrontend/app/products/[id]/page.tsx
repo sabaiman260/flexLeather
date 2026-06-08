@@ -46,6 +46,7 @@ export default function ProductDetail() {
   const params = useParams()
   const productId = params.id as string
   const [product, setProduct] = useState<Product | null>(null)
+  const [loadingProduct, setLoadingProduct] = useState<boolean>(true)
   const [reviews, setReviews] = useState<Review[]>([])
   const [page, setPage] = useState<number>(1)
   const [limit] = useState<number>(3)
@@ -93,7 +94,10 @@ export default function ProductDetail() {
           sizes: p.sizes || []
         }
         setProduct(mapped)
-      } catch {}
+      } catch {
+      } finally {
+        setLoadingProduct(false)
+      }
       try {
         setLoadingInitial(true)
         const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=1&limit=${limit}`, {
@@ -177,6 +181,8 @@ export default function ProductDetail() {
       id: product.id,
       name: product.name,
       price: effectivePrice,
+      originalPrice: product.discount && product.discount > 0 ? product.price : undefined,
+      discount: product.discount && product.discount > 0 ? product.discount : undefined,
       image: product.images[0] || '/placeholder.jpg',
       selectedColor: selectedColor,
       selectedSize: selectedSize,
@@ -184,6 +190,18 @@ export default function ProductDetail() {
       availableSizes: product.sizes
     }, quantity)
     router.push('/cart')
+  }
+
+  if (loadingProduct) {
+    return (
+      <>
+        <Header />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-12 h-12 border-4 border-muted border-t-foreground rounded-full animate-spin" />
+        </div>
+        <Footer />
+      </>
+    )
   }
 
   if (!product) {

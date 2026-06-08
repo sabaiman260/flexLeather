@@ -4,6 +4,24 @@ import connectDB from "./src/core/database/index.js";
 import { testEmailConnection } from "./src/shared/helpers/mail.helper.js";
 
 dotenv.config();
+
+// Fail fast in production if critical env vars are missing
+if (process.env.NODE_ENV === "production") {
+  const required = [
+    "MONGO_URI",
+    "ACCESS_TOKEN_SECRET",
+    "REFRESH_TOKEN_SECRET",
+    "CLIENT_URL",
+    "BASE_URL",
+    "CORS_ORIGINS",
+  ];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length) {
+    console.error(`❌ Missing required env vars: ${missing.join(", ")}`);
+    process.exit(1);
+  }
+}
+
 const PORT = process.env.PORT || 4000;
 
 

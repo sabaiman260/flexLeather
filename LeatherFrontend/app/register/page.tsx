@@ -6,9 +6,7 @@ import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/lib/api'
 import { Eye, EyeOff } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/components/auth-provider'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 export default function RegisterPage() {
@@ -20,17 +18,12 @@ export default function RegisterPage() {
   const [confirm, setConfirm] = useState('')
   const [profileFile, setProfileFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const googleLoaded = useRef(false)
-  const { login } = useAuth()
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
     try {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       const phoneRegex = /^[0-9]{11}$/
@@ -65,9 +58,7 @@ export default function RegisterPage() {
 
       // Handle different registration outcomes gracefully
       if (response?.data?.code === 'USER_ALREADY_EXISTS') {
-        const msg = 'An account with this email already exists. Please try logging in instead.'
-        setError(msg)
-        toast.error(msg)
+        toast.error('An account with this email already exists. Please try logging in instead.')
         return
       }
 
@@ -91,19 +82,13 @@ export default function RegisterPage() {
         console.error('Error details:', err?.details || err?.body)
       }
 
-      // Handle 409 conflict (user already exists)
       if (err?.status === 409) {
-        const msg = 'An account with this email already exists. Please try logging in instead.'
-        setError(msg)
-        toast.error(msg)
+        toast.error('An account with this email already exists. Please try logging in instead.')
         return
       }
 
-      // For unexpected errors, show generic message
       if (!isExpectedCase) {
-        const errorMsg = err?.message || 'Registration failed. Please try again.'
-        setError(errorMsg)
-        toast.error(errorMsg)
+        toast.error(err?.message || 'Registration failed. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -197,7 +182,6 @@ export default function RegisterPage() {
             <h1 className="text-3xl font-serif font-light tracking-wide mb-8 text-center">
               Create Account
             </h1>
-            {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-sm font-light mb-2">Full Name</label>

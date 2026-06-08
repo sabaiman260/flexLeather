@@ -216,12 +216,26 @@ export const getSalesReport = asyncHandler(async (req, res) => {
 // GET ALL USERS
 export const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find().select('-userPassword -refreshToken');
-  
+
   if (!users) {
     throw new ApiError(404, "No users found");
   }
 
-  return res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
+  const usersWithUrls = await Promise.all(
+    users.map(async (u) => {
+      let profileImageUrl = null;
+      if (u.profileImage) {
+        try {
+          profileImageUrl = await S3UploadHelper.getSignedUrl(u.profileImage);
+        } catch {
+          profileImageUrl = u.profileImage;
+        }
+      }
+      return { ...u._doc, profileImage: profileImageUrl };
+    })
+  );
+
+  return res.status(200).json(new ApiResponse(200, usersWithUrls, "Users fetched successfully"));
 });
 
 // DELETE USER

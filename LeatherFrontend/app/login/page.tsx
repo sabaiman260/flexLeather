@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/header'
@@ -15,14 +15,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [googleReady, setGoogleReady] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
-  const googleLoadedRef = useRef(false)
-  const googleInitializedRef = useRef(false)
-  const promptShownRef = useRef(false)
 
   // ================= GOOGLE OAUTH DISABLED (COMMENTED OUT) =================
   // Google auto-initialization and script loading are disabled to prevent FedCM errors.
@@ -206,7 +201,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
 
     try {
       const res = await apiFetch('/api/v1/auth/login', {
@@ -223,13 +217,14 @@ export default function LoginPage() {
         if (user.userRole === 'admin') router.push('/admin')
         else router.push('/')
       } else {
-        toast.error('Login failed - no tokens received')
-        setError('Login failed - no tokens received')
+        toast.error('Login failed. Please check your credentials and try again.')
       }
     } catch (err: any) {
-      const errorMessage = err?.message || 'Login failed'
-      setError(errorMessage)
-      toast.error(errorMessage)
+      const msg = err?.message || 'Login failed'
+      const friendly = msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network') || msg.toLowerCase().includes('connection')
+        ? 'Unable to connect to the server. Please check your internet connection and try again.'
+        : msg
+      toast.error(friendly)
     } finally {
       setLoading(false)
     }
@@ -250,8 +245,6 @@ export default function LoginPage() {
             <h1 className="text-3xl font-serif font-light tracking-wide mb-8 text-center">
               Sign In
             </h1>
-
-            {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
 
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>

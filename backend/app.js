@@ -78,12 +78,33 @@ import settingsRouter from "./src/modules/settings/settings.routes.js";
 const app = express();
 
 /* =======================
-   CORS (DEV SAFE)
+   CORS
+   Dev:  any localhost origin is allowed
+   Prod: only domains listed in CORS_ORIGINS env var (comma-separated)
+         e.g. CORS_ORIGINS=https://theflexleather.com,https://www.theflexleather.com
 ======================= */
+const prodOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
+  : [];
+
 app.use(
   cors({
-    origin: true,            // reflect request origin (localhost, Next.js)
-    credentials: true,       // REQUIRED for cookies
+    origin: (origin, callback) => {
+      // Allow server-to-server (no origin header) and health checks
+      if (!origin) return callback(null, true);
+
+      if (process.env.NODE_ENV !== "production") {
+        // Development: allow all localhost / local IPs
+        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+          return callback(null, true);
+        }
+      }
+
+      if (prodOrigins.includes(origin)) return callback(null, true);
+
+      return callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -113,13 +134,8 @@ app.use('/api/v1/settings', settingsRouter);
 /* =======================
    HEALTH CHECK
 ======================= */
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "🚀 Server running (development mode)",
-    env: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
+app.get("/health", (_req, res) => {
+  res.status(200).json({ success: true, timestamp: new Date().toISOString() });
 });
 
 /* =======================

@@ -206,6 +206,6 @@ export type BackendProduct = {
   specs?: string[];
   category?: { _id: string; name?: string; type?: string; slug?: string } | string;
   imageUrls?: string[];
-  // `images` may contain raw keys or URLs depending on the endpoint — include for admin UI
   images?: string[];
+  isActive?: boolean;
 };
