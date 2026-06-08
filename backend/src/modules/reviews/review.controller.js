@@ -106,10 +106,10 @@ const approveReview = asyncHandler(async (req, res) => {
 
 //-------------------- DELETE REVIEW --------------------//
 const deleteReview = asyncHandler(async (req, res) => {
-    const review = await Review.findById(req.params.id);
-    if (!review) throw new ApiError(404, "Review not found");
+    // Use findByIdAndDelete to avoid potential issues with document middleware
+    const deleted = await Review.findByIdAndDelete(req.params.id);
+    if (!deleted) throw new ApiError(404, "Review not found");
 
-    await review.remove();
     return res.status(200).json(new ApiResponse(200, {}, "Review deleted successfully"));
 });
 

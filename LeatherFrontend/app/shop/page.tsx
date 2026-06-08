@@ -16,6 +16,7 @@ type UIProduct = {
   name: string
   price: number
   image: string
+  discount?: number
   categorySlug?: string
   colors?: string[]
   sizes?: string[]
@@ -54,6 +55,7 @@ export default function ShopPage() {
           id: p._id,
           name: p.name,
           price: p.price,
+          discount: p.discount || 0,
           image:
             Array.isArray(p.imageUrls) && p.imageUrls.length > 0
               ? p.imageUrls[0]
@@ -219,22 +221,34 @@ export default function ShopPage() {
                       href={`/products/${p.id}`}
                       className="group flex flex-col h-full"
                     >
-                      <div className="relative aspect-square bg-muted overflow-hidden mb-4 p-0 flex items-center justify-center">
+                      <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-0 flex items-center justify-center">
                         <Image
                           src={p.image}
                           alt={p.name}
                           fill
                           className="object-cover transition duration-500 group-hover:scale-105"
                         />
+                        {p.discount && p.discount > 0 && (
+                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            {p.discount}% OFF
+                          </div>
+                        )}
                       </div>
 
                       <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
                         {p.name}
                       </h3>
 
-                      <p className="text-sm font-serif mt-2">
-                        PKR {p.price.toLocaleString()}
-                      </p>
+                      <div className="text-sm mt-2">
+                        {p.discount && p.discount > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground line-through">PKR {p.price.toLocaleString()}</span>
+                            <span className="font-serif text-lg text-red-600">PKR {Math.round(p.price * (1 - (p.discount || 0) / 100)).toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <p className="font-serif text-lg">PKR {p.price.toLocaleString()}</p>
+                        )}
+                      </div>
 
                       <Button
                         size="sm"
