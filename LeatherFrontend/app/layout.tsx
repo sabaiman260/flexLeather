@@ -11,7 +11,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400','700'], variable: '--font-playfair' })
 
 export const metadata: Metadata = {
-  title: 'FlexLeather - Premium Leather Goods',
+  title: 'FlexLeather',
   description: 'Luxury leather handbags, wallets, and travel accessories. Handcrafted with premium materials.',
   generator: 'v0.app',
   icons: {
