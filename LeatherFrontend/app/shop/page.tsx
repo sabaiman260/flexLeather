@@ -47,37 +47,52 @@ export default function ShopPage() {
 
   /* ---------------- FETCH PRODUCTS ---------------- */
   useEffect(() => {
-    ;(async () => {
-      try {
-        const res = await apiFetch('/api/v1/products/getAll')
-        const list: BackendProduct[] = res?.data || []
+    fetchProducts()
+  }, [])
 
-        const mapped: UIProduct[] = list.map(p => ({
-          id: p._id,
-          name: p.name,
-          price: p.price,
-          discount: p.discount || 0,
-          image:
-            Array.isArray(p.imageUrls) && p.imageUrls.length > 0
-              ? p.imageUrls[0]
-              : '/placeholder.jpg',
-           categorySlug:
-            typeof p.category === 'object' && p.category?.slug
-              ? p.category.slug
-              : typeof p.category === 'object' && p.category?.name
-              ? p.category.name.toLowerCase().replace(/\s+/g, '-')
-              : undefined,
-          colors: p.colors || [],
-          sizes: p.sizes || []
-        }))
+  // Extracted fetch function so we can call it when admin updates products
+  const fetchProducts = async () => {
+    try {
+      setLoading(true)
+      const res = await apiFetch('/api/v1/products/getAll')
+      const list: BackendProduct[] = res?.data || []
 
-        setProducts(mapped)
-      } catch (err) {
-        console.error('Failed to load products', err)
-      } finally {
-        setLoading(false)
+      const mapped: UIProduct[] = list.map(p => ({
+        id: p._id,
+        name: p.name,
+        price: p.price,
+        discount: p.discount || 0,
+        image:
+          Array.isArray(p.imageUrls) && p.imageUrls.length > 0
+            ? p.imageUrls[0]
+            : '/placeholder.jpg',
+         categorySlug:
+          typeof p.category === 'object' && p.category?.slug
+            ? p.category.slug
+            : typeof p.category === 'object' && p.category?.name
+            ? p.category.name.toLowerCase().replace(/\s+/g, '-')
+            : undefined,
+        colors: p.colors || [],
+        sizes: p.sizes || []
+      }))
+
+      setProducts(mapped)
+    } catch (err) {
+      console.error('Failed to load products', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Listen for admin changes (storage event) and refetch products when flagged
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'products_last_updated') {
+        fetchProducts()
       }
-    })()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
   }, [])
 
   useEffect(() => {

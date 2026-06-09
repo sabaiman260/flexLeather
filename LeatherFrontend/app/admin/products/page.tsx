@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { apiFetch, API_BASE_URL, BackendProduct } from '@/lib/api'
 import { X, Upload, Plus, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type FormState = {
   name: string
@@ -144,7 +145,9 @@ export default function AdminProductsPage() {
 
       fd.append('name', form.name)
       fd.append('price', String(form.price))
-      if (form.discount !== undefined) fd.append('discount', String(form.discount))
+      // Always append discount field. If user cleared the input it will be an empty string,
+      // backend will coerce to 0 which unsets the discount effectively.
+      fd.append('discount', String(form.discount ?? ''))
       if (form.stock !== undefined) fd.append('stock', String(form.stock))
       if (form.description) fd.append('description', form.description)
       if (form.category) fd.append('category', form.category)
@@ -175,7 +178,12 @@ export default function AdminProductsPage() {
       }
 
       setModalOpen(false)
+      // mark products updated so other pages can refetch and reflect changes
+      try {
+        localStorage.setItem('products_last_updated', String(Date.now()))
+      } catch {}
       loadAllProducts()
+      toast.success(isEditing ? 'Product updated successfully' : 'Product created successfully')
       resetForm()
     } catch (e: any) {
       setError(e?.message || `Failed to ${isEditing ? 'update' : 'create'} product`)

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { pushGtmEcommerceEvent } from '@/lib/gtm'
+import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/components/auth-provider'
 
 type CartItem = {
@@ -66,6 +67,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
   }, [items])
+
+  // When admin updates products, other tabs will receive a storage event and
+  // we should reconcile cart item prices/discounts with latest product data.
+  useEffect(() => {
+    const onStorage = async (e: StorageEvent) => {
+      if (e.key !== 'products_last_updated') return
+      try {
+        const raw = localStorage.getItem(CART_STORAGE_KEY)
+        const parsed: CartItem[] = raw ? JSON.parse(raw) : []
+        if (!parsed || parsed.length === 0) return
+
+        // Get unique product IDs
+        const ids = Array.from(new Set(parsed.map(i => i.id)))
+        // Fetch product details in parallel
+        const fetches = ids.map(id => apiFetch(`/api/v1/products/get/${id}`).then(r => ({ id, data: r?.data?.product })).catch(() => ({ id, data: null })))
+        const results = await Promise.all(fetches)
+        const map = new Map<string, any>()
+        results.forEach(r => { if (r.data) map.set(r.id, r.data) })
+
+        // Update cart with latest prices/discounts
+        const updated = parsed.map(item => {
+          const prod = map.get(item.id)
+          if (!prod) return item
+          const discount = prod.discount || 0
+          const effectivePrice = discount > 0 ? Math.round(prod.price * (1 - discount / 100)) : prod.price
+          return { ...item, price: effectivePrice, originalPrice: discount > 0 ? prod.price : undefined, discount: discount }
+        })
+
+        setItems(updated)
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [setItems])
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0)
   const totalPrice = items.reduce((s, i) => s + i.price * i.quantity, 0)

@@ -131,6 +131,40 @@ export default function ProductDetail() {
     })()
   }, [productId])
 
+  // Refetch product when admin updates products elsewhere (storage flag)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'products_last_updated') {
+        ;(async () => {
+          try {
+            const res = await apiFetch(`/api/v1/products/get/${productId}`)
+            const p = res?.data?.product
+            const urls: string[] = res?.data?.imageUrls || []
+            if (p) {
+              const mapped: Product = {
+                id: p._id,
+                name: p.name,
+                price: p.price,
+                discount: p.discount,
+                category: p.category?.name || p.category?.type,
+                description: p.description,
+                specs: p.specs || [],
+                images: urls.length ? urls : ['/placeholder.jpg'],
+                colors: p.colors || [],
+                sizes: p.sizes || []
+              }
+              setProduct(mapped)
+            }
+          } catch {
+            // ignore
+          }
+        })()
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [productId])
+
   // Fire view_item GTM event when product details are available
   useEffect(() => {
     if (!product) return
