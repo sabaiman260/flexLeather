@@ -42,9 +42,16 @@ export default function AdminBuyersPage() {
         setError('Failed to fetch users')
       }
     } catch (err: any) {
-      const errorMsg = err?.message || 'Failed to fetch users'
-      setError(errorMsg)
-      toast.error(errorMsg)
+      try {
+        const formatApiError = (await import('@/lib/formatApiError')).default
+        const friendly = formatApiError(err)
+        setError(friendly)
+        toast.error(friendly)
+      } catch {
+        const errorMsg = err?.message || 'Failed to fetch users'
+        setError(errorMsg)
+        toast.error(errorMsg)
+      }
     } finally {
       setLoading(false)
     }
@@ -59,7 +66,12 @@ export default function AdminBuyersPage() {
         toast.success(`User ${userName} deleted successfully`)
         setUsers(users.filter(u => u._id !== userId))
       } catch (err: any) {
-        toast.error(err?.message || 'Failed to delete user')
+        try {
+          const formatApiError = (await import('@/lib/formatApiError')).default
+          toast.error(formatApiError(err))
+        } catch {
+          toast.error(err?.message || 'Failed to delete user')
+        }
       }
     }
   }
@@ -76,7 +88,12 @@ export default function AdminBuyersPage() {
         u._id === userId ? { ...u, userRole: newRole as 'customer' | 'admin' } : u
       ))
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to update user role')
+      try {
+        const formatApiError = (await import('@/lib/formatApiError')).default
+        toast.error(formatApiError(err))
+      } catch {
+        toast.error(err?.message || 'Failed to update user role')
+      }
     }
   }
 

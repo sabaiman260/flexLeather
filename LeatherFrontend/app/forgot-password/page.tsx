@@ -30,7 +30,12 @@ export default function ForgotPasswordPage() {
       // Optionally redirect back to login after short delay
       setTimeout(() => router.push('/login'), 2500)
     } catch (err: any) {
-      setError(err?.message || 'Failed to request password reset')
+      try {
+        const formatApiError = (await import('@/lib/formatApiError')).default
+        setError(formatApiError(err))
+      } catch {
+        setError(err?.message || 'Failed to request password reset')
+      }
     } finally {
       setLoading(false)
     }

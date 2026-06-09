@@ -15,6 +15,7 @@ type FeaturedProductsProps = {
   currentProductId?: string
   currentProductName?: string
   title?: string
+  showCategory?: boolean
 }
 
 // Extract meaningful keywords from a product name (ignores generic words)
@@ -23,7 +24,7 @@ function extractKeywords(name: string): string[] {
   return name.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w))
 }
 
-export default function FeaturedProducts({ category, currentProductId, currentProductName, title }: FeaturedProductsProps) {
+export default function FeaturedProducts({ category, currentProductId, currentProductName, title, showCategory = false }: FeaturedProductsProps) {
   const [products, setProducts] = useState<UIProduct[]>([])
   const { addToCart } = useCart()
 
@@ -96,7 +97,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
                 <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
                   {product.name}
                 </h3>
-                {product.category && (
+                {product.category && showCategory && (
                   <p className="text-xs text-muted-foreground mb-2">{product.category}</p>
                 )}
                 <div className="mb-4">

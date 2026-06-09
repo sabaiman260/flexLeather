@@ -220,11 +220,14 @@ export default function LoginPage() {
         toast.error('Login failed. Please check your credentials and try again.')
       }
     } catch (err: any) {
-      const msg = err?.message || 'Login failed'
-      const friendly = msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network') || msg.toLowerCase().includes('connection')
-        ? 'Unable to connect to the server. Please check your internet connection and try again.'
-        : msg
-      toast.error(friendly)
+      // Normalize error message for user-friendly toast
+      try {
+        const formatApiError = (await import('@/lib/formatApiError')).default
+        toast.error(formatApiError(err))
+      } catch {
+        const fallback = err?.message || 'Login failed. Please try again.'
+        toast.error(fallback)
+      }
     } finally {
       setLoading(false)
     }

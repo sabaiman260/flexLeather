@@ -39,7 +39,12 @@ export default function ResetForm({ token }: { token: string }) {
       setMessage(res?.message || 'Password has been reset. You can now sign in.')
       setTimeout(() => router.push('/login'), 2000)
     } catch (err: any) {
-      setError(err?.message || 'Failed to reset password')
+      try {
+        const formatApiError = (await import('@/lib/formatApiError')).default
+        setError(formatApiError(err))
+      } catch {
+        setError(err?.message || 'Failed to reset password')
+      }
     } finally {
       setLoading(false)
     }

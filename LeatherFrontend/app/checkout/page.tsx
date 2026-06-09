@@ -116,9 +116,15 @@ export default function CheckoutPage() {
 
     if (!name.trim()) { toast.error('Please enter your full name.'); return }
     if (!email.trim()) { toast.error('Please enter your email address.'); return }
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) { toast.error('Please enter a valid email address.'); return }
     if (!address.trim()) { toast.error('Please enter your shipping address.'); return }
     if (!city.trim()) { toast.error('Please enter your city.'); return }
     if (!zip.trim()) { toast.error('Please enter your ZIP / postal code.'); return }
+    // ZIP / postal code: require 5 digits (common format); adjust if you prefer different length
+    const zipRegex = /^[0-9]{5}$/
+    if (!zipRegex.test(zip.trim())) { toast.error('ZIP / postal code must be 5 digits.'); return }
 
     const phoneRegex = /^[0-9]{11}$/
     if (!phone.trim()) { toast.error('Please enter your phone number.'); return }
@@ -127,9 +133,17 @@ export default function CheckoutPage() {
       return
     }
 
-    if ((paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && !transactionId.trim()) {
-      toast.error('Please enter the Transaction / Reference ID from your payment confirmation.')
-      return
+    if (paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') {
+      if (!transactionId.trim()) {
+        toast.error('Please enter the Transaction / Reference ID from your payment confirmation.')
+        return
+      }
+      // Basic transaction/reference id validation (alphanumeric + dashes, min length 6)
+      const txRegex = /^[A-Za-z0-9\-]{6,}$/
+      if (!txRegex.test(transactionId.trim())) {
+        toast.error('Transaction/Reference ID must be at least 6 characters (letters, numbers or -).')
+        return
+      }
     }
 
     const orderItems = items.map(i => ({
@@ -265,56 +279,12 @@ export default function CheckoutPage() {
 
     } catch (e: any) {
       console.error('Place order error:', e)
-
-      // Build a friendly error message for users from various backend error shapes
-      const defaultMsg = 'Failed to place order. Please check your information and try again.'
-
-      const extractMessages = (err: any): string[] => {
-        try {
-          // Common ApiError shape from backend: { message, errors: [ { field, message, path } ] }
-          if (err?.body?.errors && Array.isArray(err.body.errors)) {
-            return err.body.errors.map((it: any) => it.message || (it.field ? `${it.field}: ${it.message}` : JSON.stringify(it)))
-          }
-
-          // apiFetch attaches details or errors on the thrown error
-          if (err?.details && Array.isArray(err.details)) {
-            return err.details.map((it: any) => it.message || (it.field ? `${it.field}: ${it.message}` : JSON.stringify(it)))
-          }
-
-          // Some errors include a body with a data.errors array
-          if (err?.body?.data?.errors && Array.isArray(err.body.data.errors)) {
-            return err.body.data.errors.map((it: any) => it.message || JSON.stringify(it))
-          }
-
-          // If message contains a JSON array (some validation implementations), attempt to parse
-          if (typeof err?.message === 'string') {
-            const m = err.message
-            const jsonMatch = m.match(/\[\{[\s\S]*\}\]/)
-            if (jsonMatch) {
-              try {
-                const parsed = JSON.parse(jsonMatch[0])
-                if (Array.isArray(parsed)) return parsed.map((it: any) => it.message || JSON.stringify(it))
-              } catch {}
-            }
-          }
-
-          // Fallback: single message string
-          if (typeof err?.message === 'string' && err.message.trim()) return [err.message]
-        } catch (inner) {
-          // ignore parsing errors
-        }
-        return []
+      try {
+        const formatApiError = (await import('@/lib/formatApiError')).default
+        toast.error(formatApiError(e))
+      } catch {
+        toast.error('Failed to place order. Please check your information and try again.')
       }
-
-      const msgs = extractMessages(e)
-      const friendly = msgs.length ? msgs.join('; ') : (e?.message || defaultMsg)
-      // Normalize common backend phrasing to user-friendly English
-      const normalized = friendly
-        .replace(/Validation failed[:\-]?\s*/i, '')
-        .replace(/\[|\]|\{|\}/g, '')
-        .replace(/\s*"?path"?:\s*\[[^\]]*\],?/gi, '')
-
-      toast.error(normalized || defaultMsg)
     }
   }
 

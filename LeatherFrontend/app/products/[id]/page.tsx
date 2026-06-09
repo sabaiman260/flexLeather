@@ -284,14 +284,7 @@ export default function ProductDetail() {
       <Header />
       <main className="bg-background min-h-screen">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
-          {/* Breadcrumb */}
-          <div className="flex gap-2 text-sm mb-8 opacity-60">
-            <Link href="/" className="hover:opacity-100">Home</Link>
-            <span>/</span>
-            <Link href="/shop" className="hover:opacity-100">Shop</Link>
-            <span>/</span>
-            <span>{product.category}</span>
-          </div>
+          {/* Breadcrumb removed per request */}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Product Images */}
@@ -336,7 +329,6 @@ export default function ProductDetail() {
             {/* Product Details */}
             <div>
               <div className="mb-6">
-                <p className="text-xs opacity-60 mb-2">{product.category}</p>
                 <h1 className="text-3xl md:text-4xl font-serif font-light tracking-wide mb-4">
                   {product.name}
                 </h1>
@@ -665,7 +657,12 @@ export default function ProductDetail() {
                       if (fi) fi.value = ''
                       setReviewTab('reviews')
                     } catch (err: any) {
-                      toast.error(err.message || 'Failed to submit review')
+                      try {
+                        const formatApiError = (await import('@/lib/formatApiError')).default
+                        toast.error(formatApiError(err))
+                      } catch {
+                        toast.error(err.message || 'Failed to submit review')
+                      }
                     }
                   }}
                   className="space-y-4"
