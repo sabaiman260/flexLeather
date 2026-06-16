@@ -27,52 +27,45 @@ export default function Header() {
   const { totalItems } = useCart()
   const { user, isLoggedIn, logout, isLoading } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const pathname = usePathname()
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   useEffect(() => {
     const q = searchParams?.get('q') || ''
     setSearch(q)
   }, [searchParams])
 
-  // Rehydrate mobile menu state from localStorage on mount and on route changes
+  // Close mobile menu on route change
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('mobileMenuOpen')
-      if (stored !== null) {
-        setMobileOpen(stored === 'true')
-      }
-    } catch (e) {}
-  }, [])
-
-  // Persist mobile menu state and re-apply on navigation so header remains consistent
-  useEffect(() => {
-    try {
-      localStorage.setItem('mobileMenuOpen', mobileOpen ? 'true' : 'false')
-    } catch (e) {}
-  }, [mobileOpen])
-
-  // When route changes, rehydrate the menu state from storage (preserve user's preference)
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('mobileMenuOpen')
-      if (stored !== null) {
-        setMobileOpen(stored === 'true')
-      }
-    } catch (e) {}
+    setMobileOpen(false)
   }, [pathname])
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
 
   return (
     <>
       {/* ================= MOBILE HEADER ================= */}
       <header className="block md:hidden fixed top-0 left-0 w-full z-50 bg-primary shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div className="relative w-10 h-10">
               <Image src="/logos.png" alt="Flex Leather Logo" width={40} height={40} className="object-contain" priority />
             </div>
-            <div className="flex flex-col text-[#E6D8C8]">
-              <span className="text-[10px] tracking-[0.3em] uppercase opacity-70">ESTD 2025</span>
-              <span className="text-[13px] font-serif font-bold tracking-widest uppercase leading-none">Flex Leather</span>
+            <div className="flex flex-col text-[#E6D8C8] whitespace-nowrap">
+              <span className="text-[10px] tracking-[0.3em] uppercase opacity-70">Flex</span>
+              <span className="text-[13px] font-serif font-bold tracking-widest uppercase leading-none">Leather</span>
             </div>
           </Link>
 
@@ -84,13 +77,7 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Show Login/Register (when not logged in) or Avatar (when logged in) */}
-            {!isLoading && !isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <Link href="/login" className="text-sm px-2 py-1 rounded hover:bg-white/5 text-[#E6D8C8]">Login</Link>
-                <Link href="/register" className="text-sm px-2 py-1 rounded bg-white text-neutral-900">Sign Up</Link>
-              </div>
-            ) : null}
+            {/* On mobile we hide the horizontal login/signup and move them into the menu. Keep cart and hamburger compact. */}
 
             {isLoggedIn && !isLoading ? (
               <Link href="/profile" className="p-1">
@@ -111,24 +98,55 @@ export default function Header() {
           </div>
         </div>
 
-        {mobileOpen && (
-          <nav className="bg-primary/95 border-t border-white/10">
-            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3">
-              <Link href="/shop" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Shop</Link>
-              <Link href="/collections" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Collections</Link>
-              <Link href="/about" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>About</Link>
-              {!isLoggedIn && <Link href="/login" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Login</Link>}
+      </header>
+
+      {/* ================= MOBILE DRAWER OVERLAY ================= */}
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+          {/* Drawer — slides in from the right */}
+          <nav className="fixed top-0 right-0 bottom-0 w-64 bg-primary z-50 flex flex-col md:hidden shadow-2xl">
+            {/* Drawer header */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-white/10 flex-shrink-0">
+              <span className={`font-serif tracking-widest uppercase text-sm ${NAV_TEXT_COLOR}`}>Menu</span>
+              <button
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+                className="p-1"
+              >
+                <X className="w-5 h-5 text-[#E6D8C8]" />
+              </button>
+            </div>
+
+            {/* Nav links */}
+            <div className="flex flex-col flex-1 overflow-y-auto px-2 py-4 gap-1">
+              <Link href="/shop" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Shop</Link>
+              <Link href="/collections" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Collections</Link>
+              <Link href="/about" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>About</Link>
+
+              <div className="border-t border-white/10 my-2" />
+
+              {isHydrated && !isLoggedIn && (
+                <>
+                  <Link href="/login" className={`text-left py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Login</Link>
+                  <Link href="/register" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Sign Up</Link>
+                </>
+              )}
               {isLoggedIn && (
                 <>
-                  <Link href="/profile" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>My Profile</Link>
-                  {user?.userRole === 'admin' && <Link href="/admin" className="py-2 px-3 rounded hover:bg-white/5" onClick={() => setMobileOpen(false)}>Admin</Link>}
-                  <button onClick={() => { setMobileOpen(false); logout(); }} className="text-left py-2 px-3 rounded hover:bg-white/5">Log out</button>
+                  <Link href="/profile" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>My Profile</Link>
+                  {user?.userRole === 'admin' && <Link href="/admin" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Admin Panel</Link>}
+                  <button onClick={() => { setMobileOpen(false); logout(); }} className={`text-left py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`}>Log out</button>
                 </>
               )}
             </div>
           </nav>
-        )}
-      </header>
+        </>
+      )}
       {/* ================= DESKTOP HEADER ================= */}
       <header
         className="
@@ -213,21 +231,15 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Signup/Register Icon (only if not logged in) */}
-            {!isLoggedIn && !isLoading && (
-              <Link
-                href="/register"
-                className="p-2 hover:bg-white/10 rounded-full transition"
-                title="Sign Up"
-              >
-                <svg className="w-5 h-5 text-[#E6D8C8]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
+            {/* Signup as plain text (only if not logged in) */}
+            {isHydrated && !isLoggedIn && !isLoading && (
+              <Link href="/register" className="hover:opacity-70 transition">
+                Sign Up
               </Link>
             )}
 
             {/* Avatar / Login */}
-            {isLoading ? null : isLoggedIn ? (
+            {isHydrated ? (isLoading ? null : isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger className="outline-none">
                   <Avatar className="h-8 w-8 border border-[#E6D8C8] bg-[#E6D8C8]">
@@ -285,13 +297,13 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/login" className="hover:opacity-70 transition">
-                Login
-              </Link>
-            )}
+              <Link href="/login" className="hover:opacity-70 transition">Login</Link>
+            )) : null}
           </nav>
         </div>
       </header>
+
+      {/* Login Modal removed — header now links to /login page */}
 
       {/* Spacer so content starts below fixed header (match header height) */}
       <div className="md:hidden h-[64px]" />

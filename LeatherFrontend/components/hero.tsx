@@ -123,7 +123,7 @@ export default function Hero() {
 
   return (
       <section className="w-full bg-background">
-        <div className="relative w-full h-[28rem] md:h-[560px] lg:h-[720px] overflow-hidden">
+        <div className="relative w-full h-[18rem] md:h-[560px] lg:h-[720px] overflow-hidden">
         {/* Slider Images */}
         {sliderImages.map((slide: Slide, index: number) => (
           <div

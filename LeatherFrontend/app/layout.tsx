@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} font-sans antialiased`}>
+      <body className={`${playfair.variable} font-sans antialiased overflow-x-hidden`}>
         <Toaster />
         <AuthProvider>
           <CartProvider>

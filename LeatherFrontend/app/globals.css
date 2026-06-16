@@ -234,21 +234,38 @@
   transform-style: preserve-3d;
 }
 
-.slide {
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  left: 40px;
-  top: 40px;
-  overflow: hidden;
+/* Responsive 3D slider slides --- avoid fixed pixel sizing which causes overflow on narrow screens */
+.slider3d {
+  --carousel-radius: 300px; /* default radius for large screens */
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
 }
 
-.slide:nth-child(1) { transform: rotateY(0deg)   translateZ(300px); }
-.slide:nth-child(2) { transform: rotateY(60deg)  translateZ(300px); }
-.slide:nth-child(3) { transform: rotateY(120deg) translateZ(300px); }
-.slide:nth-child(4) { transform: rotateY(180deg) translateZ(300px); }
-.slide:nth-child(5) { transform: rotateY(240deg) translateZ(300px); }
-.slide:nth-child(6) { transform: rotateY(300deg) translateZ(300px); }
+.slide {
+  position: absolute;
+  /* let the slide shrink on small screens while capping on desktop */
+  width: min(220px, 70%);
+  height: min(220px, 70%);
+  left: 50%;
+  top: 50%;
+  overflow: hidden;
+  /* each nth-child will set rotation + translateZ which is applied relative to this centered origin */
+}
+
+.slide:nth-child(1) { transform: translate(-50%, -50%) rotateY(0deg)   translateZ(var(--carousel-radius)); }
+.slide:nth-child(2) { transform: translate(-50%, -50%) rotateY(60deg)  translateZ(var(--carousel-radius)); }
+.slide:nth-child(3) { transform: translate(-50%, -50%) rotateY(120deg) translateZ(var(--carousel-radius)); }
+.slide:nth-child(4) { transform: translate(-50%, -50%) rotateY(180deg) translateZ(var(--carousel-radius)); }
+.slide:nth-child(5) { transform: translate(-50%, -50%) rotateY(240deg) translateZ(var(--carousel-radius)); }
+.slide:nth-child(6) { transform: translate(-50%, -50%) rotateY(300deg) translateZ(var(--carousel-radius)); }
+
+/* Reduce carousel radius and slide sizes on small screens to prevent elements from sticking outside the viewport */
+@media (max-width: 768px) {
+  .slider3d { --carousel-radius: 120px; }
+  .slide { width: min(180px, 70%); height: min(180px, 70%); }
+}
 
 @keyframes rotate3D {
   0%   { transform: rotateY(0deg); }
