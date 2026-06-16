@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
@@ -8,11 +9,11 @@ import { CheckCircle } from 'lucide-react'
 import { useEffect } from 'react'
 import { useCart } from '@/components/cart-context'
 
-export default function CheckoutSuccessPage() {
+// 1. Asli Content ko alag component me daal diya taaki Suspense ispar kaam kare
+function SuccessPageContent() {
   const { clearCart } = useCart()
 
   useEffect(() => {
-    // Clear cart again just in case, though usually done before redirect
     clearCart()
   }, [clearCart])
 
@@ -40,5 +41,18 @@ export default function CheckoutSuccessPage() {
       </main>
       <Footer />
     </>
+  )
+}
+
+// 2. Main Export Component ko Suspense ke andar wrap kar diya
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <main className="bg-background min-h-[70vh] flex items-center justify-center">
+        <div className="text-center text-muted-foreground">Loading order status...</div>
+      </main>
+    }>
+      <SuccessPageContent />
+    </Suspense>
   )
 }

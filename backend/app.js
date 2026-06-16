@@ -132,7 +132,7 @@ app.use('/api/v1/cloudinary', cloudinaryRouter);
 app.use('/api/v1/settings', settingsRouter);
 
 /* =======================
-   HEALTH CHECK
+   HEALTH CHECK                                 paste link in browser :   https://server.theflexleather.com/health
 ======================= */
 app.get("/health", (_req, res) => {
   res.status(200).json({ success: true, timestamp: new Date().toISOString() });

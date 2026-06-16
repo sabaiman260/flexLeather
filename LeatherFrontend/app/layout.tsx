@@ -5,6 +5,7 @@ import './globals.css'
 import CartProvider from '@/components/cart-context'
 import { AuthProvider } from '@/components/auth-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { Suspense } from 'react' // 1. Suspense import kiya
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -31,7 +32,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Toaster />
         <AuthProvider>
           <CartProvider>
-            {children}
+            {/* 2. Pooray children content ko Suspense se wrap kar diya */}
+            <Suspense fallback={
+              <div className="flex min-h-screen items-center justify-center bg-black text-white font-serif">
+                Loading FlexLeather...
+              </div>
+            }>
+              {children}
+            </Suspense>
           </CartProvider>
         </AuthProvider>
         <Analytics />
