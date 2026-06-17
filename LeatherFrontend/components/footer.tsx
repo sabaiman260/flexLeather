@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Mail, MapPin, Phone, Facebook, Instagram, Youtube } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import PaymentBadges from './PaymentBadges'
 
 function TikTokIcon(props: React.ComponentProps<'svg'>) {
   return (
@@ -51,28 +52,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Shop */}
-          <div>
-            <h4 className="text-sm font-light tracking-wide mb-4">
-              Shop
-            </h4>
-            <nav className="space-y-3">
-              <Link href="/shop?category=office" className="block text-sm font-light opacity-80 hover:opacity-100">
-                Office
-              </Link>
-              <Link href="/shop?category=gift-ideas" className="block text-sm font-light opacity-80 hover:opacity-100">
-                Gift Ideas
-              </Link>
-              <Link href="/shop?category=women" className="block text-sm font-light opacity-80 hover:opacity-100">
-                Women
-              </Link>
-              <Link href="/shop?category=kids" className="block text-sm font-light opacity-80 hover:opacity-100">
-                Kids
-              </Link>
-            </nav>
-          </div>
-
-          {/* Customer Service */}
+          {/* Customer Service (moved into Shop column position) */}
           <div>
             <h4 className="text-sm font-light tracking-wide mb-4">
               Customer Service
@@ -92,6 +72,14 @@ export default function Footer() {
               </Link>
             </nav>
           </div>
+
+          {/* Payment column (moved up into grid) */}
+          {/* <div>
+            <h4 className="text-sm font-light tracking-wide mb-4">
+              Payment
+            </h4>
+            <PaymentBadges />
+          </div> */}
 
           {/* Contact */}
           <div>
@@ -118,6 +106,14 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Payment column (moved up into grid) */}
+          <div>
+            <h4 className="text-sm font-light tracking-wide mb-4">
+              Payment
+            </h4>
+            <PaymentBadges />
+          </div>
+
         </div>
 
         {/* Newsletter */}
@@ -142,8 +138,8 @@ export default function Footer() {
 
           <p>© {new Date().getFullYear()} FlexLeather. All rights reserved.</p>
 
-          {/* Social Links */}
-          <div className="flex gap-6 mt-4 md:mt-0">
+          {/* Social Links + Payment Logos */}
+          <div className="flex items-center gap-6 mt-4 md:mt-0">
             <a
               href="https://www.instagram.com/flexleather.official/"
               target="_blank"
@@ -183,6 +179,8 @@ export default function Footer() {
             >
               <TikTokIcon className="w-5 h-5" />
             </a>
+
+            
           </div>
 
         </div>
