@@ -7,7 +7,7 @@ type LogoKey = 'visa' | 'jazzcash' | 'paypak'
 const logos: { key: LogoKey; src: string; alt: string }[] = [
   { key: 'visa', src: '/payments/visa.png', alt: 'VISA' },
   { key: 'jazzcash', src: '/payments/jazzcash.png', alt: 'JazzCash' },
-  { key: 'paypak', src: '/payments/paypak-logo.png', alt: 'PayPak' },
+  { key: 'paypak', src: '/payments/Paypak-logo.png', alt: 'PayPak' },
 ]
 
 export default function PaymentBadges() {
