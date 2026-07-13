@@ -3,5 +3,6 @@ node_modules/
 .pnpm-store/
 .env
 .env.local
+.env.example
 .env.production.local
 .env.development.local
