@@ -17,6 +17,7 @@ type FormState = {
   specs?: string
   isActive?: boolean
   category?: string
+  soldOut?: boolean
 }
 
 const FIXED_CATEGORIES = ['MEN', 'WOMEN', 'KIDS', 'OFFICE', 'GIFT IDEAS']
@@ -43,6 +44,7 @@ export default function AdminProductsPage() {
     specs: '',
     isActive: true,
     category: ''
+    , soldOut: false
   })
   
   const [images, setImages] = useState<File[] | null>(null)
@@ -99,6 +101,7 @@ export default function AdminProductsPage() {
       specs: '',
       isActive: true,
       category: ''
+      , soldOut: false
     })
     setImages(null)
     setEditingId(null)
@@ -124,7 +127,8 @@ export default function AdminProductsPage() {
       colors: Array.isArray(p.colors) ? p.colors.join(',') : '',
       specs: Array.isArray(p.specs) ? p.specs.join(',') : '',
       isActive: true,
-      category: catId || ''
+      category: catId || '',
+      soldOut: (!p.stock || p.stock <= 0)
     })
     setImages(null)
     setEditingId(p._id)
@@ -148,7 +152,12 @@ export default function AdminProductsPage() {
       // Always append discount field. If user cleared the input it will be an empty string,
       // backend will coerce to 0 which unsets the discount effectively.
       fd.append('discount', String(form.discount ?? ''))
-      if (form.stock !== undefined) fd.append('stock', String(form.stock))
+      // If admin marked product sold out, ensure backend receives stock=0
+      if (form.stock !== undefined) {
+        fd.append('stock', String(form.stock))
+      } else if (form.soldOut) {
+        fd.append('stock', '0')
+      }
       if (form.description) fd.append('description', form.description)
       if (form.category) fd.append('category', form.category)
       if (form.isActive !== undefined) fd.append('isActive', String(form.isActive))
@@ -252,9 +261,14 @@ export default function AdminProductsPage() {
                   <td className="p-4">PKR {p.price.toLocaleString()}</td>
                   <td className="p-4">{p.stock || 0}</td>
                   <td className="p-4">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${p.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {p.isActive !== false ? 'Active' : 'Inactive'}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${p.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {p.isActive !== false ? 'Active' : 'Inactive'}
+                      </span>
+                      {(!p.stock || p.stock <= 0) && (
+                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700">SOLD OUT</span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -312,7 +326,26 @@ export default function AdminProductsPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium uppercase text-gray-500">Stock</label>
-                <input className="w-full border p-2 rounded focus:border-black outline-none" type="number" placeholder="0" value={form.stock ?? ''} onChange={e => setForm({ ...form, stock: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                <input className="w-full border p-2 rounded focus:border-black outline-none" type="number" placeholder="0" value={form.stock ?? ''} onChange={e => setForm({ ...form, stock: e.target.value === '' ? undefined : Number(e.target.value), soldOut: e.target.value === '' ? form.soldOut : (Number(e.target.value) <= 0) })} disabled={form.soldOut} />
+                <label className="inline-flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    checked={!!form.soldOut}
+                    onChange={e => {
+                      const checked = e.target.checked
+                      setForm(prev => {
+                        // If checking -> set stock to 0. If unchecking and previous stock was 0, set to 1
+                        let newStock = prev.stock
+                        if (checked) newStock = 0
+                        else {
+                          if (prev.stock === 0 || prev.stock === undefined) newStock = 1
+                        }
+                        return { ...prev, soldOut: checked, stock: newStock }
+                      })
+                    }}
+                  />
+                  <span className="text-xs text-gray-500">Mark as Sold Out</span>
+                </label>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium uppercase text-gray-500">Status</label>

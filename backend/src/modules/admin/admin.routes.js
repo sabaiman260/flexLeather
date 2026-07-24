@@ -10,6 +10,7 @@ import {
     deleteAdminProfileImage,
     toggleBuyerStatus,
     getPendingReviews,
+    getApprovedReviews,
     getDashboardStats,
     getSalesReport,
     getAllUsers,
@@ -40,6 +41,7 @@ adminRouter.patch("/buyer/toggle-status/:id", toggleBuyerStatus);
 
 // Review Moderation
 adminRouter.get("/reviews/pending", getPendingReviews);
+adminRouter.get("/reviews/approved", getApprovedReviews);
 
 // Dashboard Analytics
 adminRouter.get("/dashboard/stats", getDashboardStats);

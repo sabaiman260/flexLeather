@@ -34,6 +34,11 @@ export default function Header() {
     setIsHydrated(true)
   }, [])
 
+  // Keep rendering the header (call hooks in same order) but hide it
+  // visually until the client hydrates. Using CSS `invisible` ensures
+  // the server and initial client HTML match while avoiding hook-order
+  // changes caused by conditional returns.
+
   useEffect(() => {
     const q = searchParams?.get('q') || ''
     setSearch(q)
@@ -55,9 +60,9 @@ export default function Header() {
   }, [mobileOpen])
 
   return (
-    <>
+    <div className={isHydrated ? '' : 'invisible'}>
       {/* ================= MOBILE HEADER ================= */}
-      <header className="block md:hidden fixed left-0 w-full z-50 bg-primary shadow-md" style={{ top: 'var(--announcement-height, 0px)' }}>
+      <header className="block md:hidden fixed left-0 w-full z-50 bg-primary shadow-md border-0 border-t-0" style={{ top: 'var(--announcement-height, 0px)' }}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div className="relative w-10 h-10">
@@ -79,7 +84,7 @@ export default function Header() {
 
             {/* On mobile we hide the horizontal login/signup and move them into the menu. Keep cart and hamburger compact. */}
 
-            {isLoggedIn && !isLoading ? (
+            {isHydrated && isLoggedIn && !isLoading ? (
               <Link href="/profile" className="p-1">
                 <Avatar className="h-8 w-8 border border-[#E6D8C8] bg-[#E6D8C8]">
                   <AvatarImage src={user?.profileImage} alt={user?.userName} />
@@ -136,7 +141,7 @@ export default function Header() {
                   <Link href="/register" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Sign Up</Link>
                 </>
               )}
-              {isLoggedIn && (
+              {isHydrated && isLoggedIn && (
                 <>
                   <Link href="/profile" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>My Profile</Link>
                   {user?.userRole === 'admin' && <Link href="/admin" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Admin Panel</Link>}
@@ -155,6 +160,7 @@ export default function Header() {
           bg-primary
           isolate
           shadow-md
+          border-0 border-t-0
         "
         style={{ top: 'var(--announcement-height, 0px)' }}
       >
@@ -313,7 +319,7 @@ export default function Header() {
       {/* WhatsApp Floating Button */}
       <div className="fixed bottom-4 right-4">
         <a 
-          href="https://wa.me/923184642266" 
+          href="https://wa.me/923717014449" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600"
@@ -322,6 +328,6 @@ export default function Header() {
           <FaWhatsapp size={32} />
         </a>
       </div>
-    </>
+    </div>
   )
 }

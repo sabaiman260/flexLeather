@@ -21,6 +21,7 @@ type UIProduct = {
   categorySlug?: string
   colors?: string[]
   sizes?: string[]
+  stock?: number
 }
 
 export default function ShopPage() {
@@ -74,6 +75,8 @@ export default function ShopPage() {
             : undefined,
         colors: p.colors || [],
         sizes: p.sizes || []
+        ,
+        stock: typeof p.stock === 'number' ? p.stock : 0
       }))
 
       setProducts(mapped)
@@ -266,11 +269,15 @@ export default function ShopPage() {
                           fill
                           className="object-cover transition duration-500 group-hover:scale-105"
                         />
-                        {p.discount && p.discount > 0 && (
+                        {p.discount && p.discount > 0 ? (
                           <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                             {p.discount}% OFF
                           </div>
-                        )}
+                        ) : (!p.stock || p.stock <= 0) ? (
+                          <div className="absolute inset-0 bg-black/30 flex items-start justify-end p-2">
+                            <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</div>
+                          </div>
+                        ) : null}
                       </div>
 
                       <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
@@ -290,10 +297,11 @@ export default function ShopPage() {
 
                       <Button
                         size="sm"
-                        className="w-full mt-auto"
+                        className={`w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground`}
                         onClick={e => {
                           e.preventDefault()
-                          
+                          if (!p.stock || p.stock <= 0) return
+
                           // If product has options, redirect to product page
                           if ((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) {
                             window.location.href = `/products/${p.id}`
@@ -308,11 +316,10 @@ export default function ShopPage() {
                           })
                           router.push('/cart')
                         }}
+                        disabled={!p.stock || p.stock <= 0}
                       >
                         <ShoppingCart className="w-4 h-4 mr-2" />
-                        {(p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0) 
-                          ? 'Add to Cart' 
-                          : 'Add to Cart'}
+                        {(!p.stock || p.stock <= 0) ? 'Sold Out' : 'Add to Cart'}
                       </Button>
                     </Link>
                   ))}

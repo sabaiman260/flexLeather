@@ -221,13 +221,15 @@ export default function AdminBuyersPage() {
                       >
                         Make {user.userRole === 'admin' ? 'Customer' : 'Admin'}
                       </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleDeleteUser(user._id, user.userName)}
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs"
-                      >
-                        Delete
-                      </Button>
+                      {user.userRole !== 'admin' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleDeleteUser(user._id, user.userName)}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs"
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

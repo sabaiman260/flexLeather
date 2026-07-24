@@ -120,6 +120,58 @@ export const getPendingReviews = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, reviewsWithUrls));
 });
 
+// GET APPROVED REVIEWS
+export const getApprovedReviews = asyncHandler(async (req, res) => {
+  const reviews = await Review.find({ isApproved: true })
+    .populate("user", "userName profileImage")
+    .populate("product", "name image");
+
+  const reviewsWithUrls = await Promise.all(reviews.map(async (review) => {
+    let userProfileImage = null;
+    if (review.user?.profileImage) {
+      try {
+        userProfileImage = await S3UploadHelper.getSignedUrl(review.user.profileImage);
+      } catch (err) {
+        console.error("Failed to get signed URL for user profile image:", err);
+        userProfileImage = review.user.profileImage;
+      }
+    }
+
+    const imageUrls = review.images && review.images.length > 0
+      ? await Promise.all(review.images.map(async (key) => {
+          try {
+            return await S3UploadHelper.getSignedUrl(key);
+          } catch (err) {
+            console.error("Failed to get signed URL for review image:", err);
+            return key;
+          }
+        }))
+      : [];
+
+    let userObj = null;
+    if (review.user) {
+      userObj = {
+        ...review.user._doc,
+        profileImage: userProfileImage
+      };
+    } else {
+      userObj = {
+        userName: review.guestDetails?.fullName || "Guest",
+        profileImage: null,
+        email: review.guestDetails?.email || null
+      };
+    }
+
+    return {
+      ...review._doc,
+      user: userObj,
+      imageUrls
+    };
+  }));
+
+  return res.status(200).json(new ApiResponse(200, reviewsWithUrls));
+});
+
 // DASHBOARD STATS
 export const getDashboardStats = asyncHandler(async (req, res) => {
   const totalOrders = await Order.countDocuments();

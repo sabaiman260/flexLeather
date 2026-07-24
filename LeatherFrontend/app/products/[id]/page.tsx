@@ -21,6 +21,7 @@ type Product = {
   id: string
   name: string
   price: number
+  stock?: number
   discount?: number
   category?: string
   description?: string
@@ -92,7 +93,9 @@ export default function ProductDetail() {
           specs: p.specs || [],
           images: urls.length ? urls : ['/placeholder.jpg'],
           colors: p.colors || [],
-          sizes: p.sizes || []
+          sizes: p.sizes || [],
+          // add stock to product state (optional) - extend Product type dynamically
+          ...(typeof p.stock === 'number' ? { stock: p.stock } : {})
         }
         setProduct(mapped)
       } catch {
@@ -227,6 +230,12 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!product) return
 
+    // Prevent adding sold-out products
+    if (product['stock'] !== undefined && product['stock'] <= 0) {
+      setError('This product is currently sold out.')
+      return
+    }
+
     if (product.colors && product.colors.length > 0 && !selectedColor) {
       setError('Please select a color')
       return
@@ -343,10 +352,17 @@ export default function ProductDetail() {
                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {product.discount}% OFF
                     </span>
+                    {product['stock'] !== undefined && product['stock'] <= 0 && (
+                      <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</span>
+                    )}
                   </div>
                 ) : (
-                  <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
-                )}
+                      <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
+                    )}
+                  {product['stock'] !== undefined && product['stock'] <= 0 && (
+                    <p className="text-sm text-red-600 font-medium mt-2">This product is currently sold out.</p>
+                  )}
+              
               </div>
 
               <p className="text-sm leading-relaxed mb-8 opacity-80">
@@ -449,10 +465,10 @@ export default function ProductDetail() {
 
                 <Button
                   onClick={handleAddToCart}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6"
+                  className={`w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6`}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart
+                  {product['stock'] !== undefined && product['stock'] <= 0 ? 'Sold Out' : 'Add to Cart'}
                 </Button>
               </div>
             </div>

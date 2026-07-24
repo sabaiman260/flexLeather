@@ -8,7 +8,7 @@ import { useCart } from '@/components/cart-context'
 import { ShoppingCart } from 'lucide-react'
 import { apiFetch, BackendProduct } from '@/lib/api'
 
-type UIProduct = { id: string; name: string; price: number; discount?: number; image: string; category?: string };
+type UIProduct = { id: string; name: string; price: number; discount?: number; image: string; category?: string; stock?: number };
 
 type FeaturedProductsProps = {
   category?: string
@@ -44,6 +44,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
           price: p.price,
           discount: p.discount,
           image: (p.imageUrls && p.imageUrls[0]) || '/placeholder.jpg',
+          stock: typeof p.stock === 'number' ? p.stock : 0,
           category: (typeof p.category === 'object' && p.category?.name) || undefined,
         }))
 
@@ -101,6 +102,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
             const discountedPrice = hasDiscount
               ? Math.round(product.price * (1 - product.discount! / 100))
               : product.price
+            const isSoldOut = typeof product.stock === 'number' && product.stock <= 0
             return (
               <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col h-full">
                 <div className="relative overflow-hidden bg-muted aspect-square mb-4 flex items-center justify-center">
@@ -110,11 +112,15 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
                     fill
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
-                  {hasDiscount && (
+                  {hasDiscount ? (
                     <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {product.discount}% OFF
                     </div>
-                  )}
+                  ) : isSoldOut ? (
+                    <div className="absolute inset-0 bg-black/30 flex items-start justify-end p-2">
+                      <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</div>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex flex-col flex-grow">
                   <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">
@@ -136,13 +142,14 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
                   <Button
                     onClick={(e) => {
                       e.preventDefault()
+                      if (isSoldOut) return
                       window.location.href = `/products/${product.id}`
                     }}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-auto"
+                    className={'w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-auto'}
                     size="sm"
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
+                    {isSoldOut ? 'Sold Out' : 'Add to Cart'}
                   </Button>
                 </div>
               </Link>
