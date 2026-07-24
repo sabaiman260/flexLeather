@@ -8,7 +8,7 @@ function getApiBaseUrl() {
 
   // Use first available environment variable
   if (possibleUrls.length > 0) {
-    let url = possibleUrls[0];
+    let url = possibleUrls[0] as string;
 
     // Ensure protocol for production
     if (process.env.NODE_ENV === 'production') {

@@ -6,33 +6,6 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-// const sliderImages = [
-//   {
-//     image: 'https://api.mjafferjees.com/storage/banner/23861.jpg',
-//     heading: 'FOR HIM',
-//     category: 'men-collection',
-//     cta: 'Discover',
-//   },
-//   {
-//     image: 'https://api.mjafferjees.com/storage/banner/1349WebCover(4).jpg',
-//     heading: 'FOR HER',
-//     category: 'women-collection',
-//     cta: 'Explore',
-//   },
-//   {
-//     image: 'https://api.mjafferjees.com/storage/banner/7577banner.3wallet.jpg',
-//     heading: 'FOR WORK',
-//     category: 'office-collection',
-//     cta: 'Shop Now',
-//   },
-//   {
-//     image: 'https://api.mjafferjees.com/storage/banner/4508WebsiteBannerMay2024Artboard1copy10.jpg',
-//     heading: 'TRAVEL IN STYLE',
-//     category: 'travel-collection',
-//     cta: 'Discover',
-//   },
-// ]
-
 type Slide = {
   image: string
   heading: string
@@ -42,44 +15,44 @@ type Slide = {
 
 const sliderImages: Slide[] = [
   {
-    image: 'https://api.mjafferjees.com/storage/banner/23861.jpg',
+    image: '/banner1.png',
     heading: 'FOR HIM',
     category: 'men-collection',
     cta: 'Discover',
   },
   
   {
-    image: 'https://api.mjafferjees.com/storage/banner/7577banner.3wallet.jpg',
+    image: '/banner2.png',
     heading: 'FOR HER',
     category: 'office-collection',
     cta: 'Shop Now',
   },
   {
-    image: 'https://api.mjafferjees.com/storage/banner/1349WebCover(4).jpg',
+    image: '/banner3.png',
     heading: 'FOR WORK',
     category: 'women-collection',
     cta: 'Explore',
   },
   {
-    image: 'https://api.mjafferjees.com/storage/banner/4508WebsiteBannerMay2024Artboard1copy10.jpg',
+    image: '/banner4.png',
     heading: 'TRAVEL IN STYLE',
     category: 'travel-collection',
     cta: 'Discover',
   },
   {
-    image: 'https://api.mjafferjees.com/storage/banner/1653WebCover(1).jpg',
+    image: '/banner5.png',
     heading: 'ACCESSORIES',
     category: 'new-arrivals',
     cta: 'Shop Now',
   },
   {
-    image: 'https://api.mjafferjees.com/storage/banner/4334banner.2.jpg',
+    image: '/banner6.png',
     heading: 'NEW ARRIVALS',
     category: 'accessories-collection',
     cta: 'Explore',
   },
   {
-    image: 'https://api.mjafferjees.com/storage/banner/1941MainBanner(2).jpg',
+    image: '/banner7.png',
     heading: 'LIMITED EDITION',
     category: 'limited-edition',
     cta: 'Discover',
