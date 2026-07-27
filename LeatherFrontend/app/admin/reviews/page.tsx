@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import { Check, X, Star } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -158,7 +159,7 @@ export default function AdminReviewsPage() {
                       <div className="flex items-center gap-3">
                         <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                           {review.user?.profileImage && (
-                            <Image src={review.user.profileImage} alt={review.user.userName} fill className="object-cover" />
+                            <Image src={cloudinaryOptimize(review.user.profileImage, 96) || review.user.profileImage} alt={review.user.userName} fill className="object-cover" />
                           )}
                         </div>
                         <span className="font-medium">{review.user?.userName || 'Unknown User'}</span>
@@ -180,7 +181,7 @@ export default function AdminReviewsPage() {
                         <div className="flex gap-1 mt-2">
                           {review.imageUrls.map((url, i) => (
                             <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block relative w-10 h-10 border rounded overflow-hidden">
-                              <Image src={url} alt="Review attachment" fill className="object-cover" />
+                              <Image src={cloudinaryOptimize(url, 200) || url} alt="Review attachment" fill className="object-cover" />
                             </a>
                           ))}
                         </div>

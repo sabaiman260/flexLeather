@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Header from '@/components/header'
@@ -102,6 +103,7 @@ export default function ShopPage() {
     if (categorySlug) setActiveCategory(categorySlug)
   }, [categorySlug])
 
+
   const baseProducts = useMemo(
     () =>
       activeCategory
@@ -122,6 +124,13 @@ export default function ShopPage() {
       setPriceRange([0, sliderMax])
     }
   }, [sliderMax])
+
+  // When a category is selected, clear any active price filter so only one filter is applied
+  useEffect(() => {
+    if (activeCategory) {
+      setPriceRange([0, sliderMax])
+    }
+  }, [activeCategory, sliderMax])
 
   /* ---------------- FINAL FILTER ---------------- */
   const filteredProducts = useMemo(() => {
@@ -231,9 +240,11 @@ export default function ShopPage() {
                   min={0}
                   max={sliderMax}
                   value={priceRange[1]}
-                  onChange={e =>
+                  onChange={e => {
+                    // User-adjusted price filter should clear any active category filter
                     setPriceRange([0, Number(e.target.value)])
-                  }
+                    setActiveCategory('')
+                  }}
                   className="w-full"
                 />
 
@@ -264,7 +275,7 @@ export default function ShopPage() {
                     >
                       <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-0 flex items-center justify-center">
                         <Image
-                          src={p.image}
+                            src={cloudinaryOptimize(p.image, 400) || p.image}
                           alt={p.name}
                           fill
                           className="object-cover transition duration-500 group-hover:scale-105"

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Header from '@/components/header'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import Footer from '@/components/footer'
 import { useAuth } from '@/components/auth-provider'
 import { apiFetch } from '@/lib/api'
@@ -178,8 +179,8 @@ export default function ProfilePage() {
               <div className="border border-border p-6 rounded-lg bg-card">
                 <div className="flex flex-col items-center">
                   <div className="w-24 h-24 rounded-full bg-muted border border-border mb-4 overflow-hidden">
-                    {user?.profileImage ? (
-                      <Image src={user.profileImage} alt="Avatar" width={96} height={96} className="w-full h-full object-cover rounded-full" />
+                      {user?.profileImage ? (
+                      <Image src={cloudinaryOptimize(user.profileImage, 96) || user.profileImage} alt="Avatar" width={96} height={96} className="w-full h-full object-cover rounded-full" />
                     ) : null}
                   </div>
                   <div className="text-center space-y-1">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -488,9 +489,9 @@ function OrderDetailsContent() {
                 <div key={idx} className="flex gap-4 items-start border-b border-border pb-4 last:border-0 last:pb-0">
                   <div className="w-16 h-16 bg-muted rounded overflow-hidden relative p-1 flex items-center justify-center flex-shrink-0">
                     {item.product?.imageUrls?.[0] ? (
-                      <Image src={item.product.imageUrls[0]} alt={item.product.name} fill className="object-contain" />
+                      <Image src={cloudinaryOptimize(item.product.imageUrls[0], 200) || item.product.imageUrls[0]} alt={item.product.name} fill className="object-contain" />
                     ) : item.product?.images?.[0] ? (
-                      <Image src={item.product.images[0]} alt={item.product.name} fill className="object-contain" />
+                      <Image src={cloudinaryOptimize(item.product.images[0], 200) || item.product.images[0]} alt={item.product.name} fill className="object-contain" />
                     ) : null}
                   </div>
                   <div className="flex-1">

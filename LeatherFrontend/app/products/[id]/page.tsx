@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import Header from '@/components/header'
@@ -304,7 +305,7 @@ export default function ProductDetail() {
               >
                 {mainImage ? (
                   <Image
-                    src={mainImage}
+                    src={cloudinaryOptimize(mainImage, 1200) || mainImage}
                     alt={product.name}
                     fill
                     className="object-cover"
@@ -324,7 +325,7 @@ export default function ProductDetail() {
                       onClick={() => handleThumbnailClick(img)}
                     >
                       <Image
-                        src={img}
+                        src={cloudinaryOptimize(img, 400) || img}
                         alt={`${product.name} view ${i + 1}`}
                         fill
                         className="object-cover"
@@ -572,7 +573,7 @@ export default function ProductDetail() {
                                 <div className="flex flex-wrap gap-2 mt-3">
                                   {r.imageUrls.map((u, i) => (
                                     <div key={i} className="w-20 h-20 relative rounded overflow-hidden border border-gray-100 flex-shrink-0">
-                                      <Image src={u} alt={`review photo ${i + 1}`} fill className="object-cover" />
+                                      <Image src={cloudinaryOptimize(u, 200) || u} alt={`review photo ${i + 1}`} fill className="object-cover" />
                                     </div>
                                   ))}
                                 </div>

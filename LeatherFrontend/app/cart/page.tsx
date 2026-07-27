@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
@@ -50,7 +51,7 @@ export default function CartPage() {
                   {cartItems.map(item => (
                     <div key={(item as any)._cartId || item.id} className="flex gap-4 items-center border border-border p-4 rounded relative">
                       <div className="w-24 h-24 relative p-1 flex items-center justify-center">
-                        <Image src={item.image ?? '/placeholder.jpg'} alt={item.name} fill className="object-contain" />
+                          <Image src={cloudinaryOptimize(item.image ?? '/placeholder.jpg', 400) || (item.image ?? '/placeholder.jpg')} alt={item.name} fill className="object-contain" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-serif text-sm mb-1">{item.name}</h4>

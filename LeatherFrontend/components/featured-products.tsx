@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/cloudinary'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/components/cart-context'
 import { ShoppingCart } from 'lucide-react'
@@ -107,7 +108,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
               <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col h-full">
                 <div className="relative overflow-hidden bg-muted aspect-square mb-4 flex items-center justify-center">
                   <Image
-                    src={product.image}
+                    src={cloudinaryOptimize(product.image, 800) || product.image}
                     alt={product.name}
                     fill
                     className="object-cover transition duration-500 group-hover:scale-105"
