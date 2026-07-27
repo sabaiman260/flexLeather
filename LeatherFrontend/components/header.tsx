@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import SearchBox from '@/components/search/SearchBox'
+import { apiFetch } from '@/lib/api'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingCart, Search, Menu, X } from 'lucide-react'
@@ -29,9 +31,31 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const pathname = usePathname()
+  const [productsIndex, setProductsIndex] = useState<any[]>([])
 
   useEffect(() => {
     setIsHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    // fetch a lightweight product list for client search/autocomplete
+    apiFetch('/api/v1/products/getAll')
+      .then(res => {
+        const items = (res?.data || []).map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          price: p.price,
+          image: Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls[0] : (p.images && p.images[0]) || null,
+          category: p.category?.name || p.category || '',
+          brand: p.brand || '',
+          description: p.description || '',
+          tags: p.tags || [],
+        }))
+        if (mounted) setProductsIndex(items)
+      })
+      .catch(() => {})
+    return () => { mounted = false }
   }, [])
 
   // Keep rendering the header (call hooks in same order) but hide it
@@ -189,27 +213,18 @@ export default function Header() {
           </Link>
 
           {/* Search */}
-          <div className="flex-1 mx-12 max-w-md">
+          <div className="flex-1 mx-12 max-w-xl">
             <div className="flex items-center border border-white/20 bg-white/10 px-4 py-2 rounded-full focus-within:bg-white/20 transition-all">
-              <Search
-                className="w-4 h-4 text-[#E6D8C8] cursor-pointer"
-                onClick={() =>
-                  search.trim() &&
-                  router.push(`/shop?q=${encodeURIComponent(search.trim())}`)
-                }
-              />
-              <input
-                type="text"
-                placeholder="Search products..."
-                className="flex-1 ml-2 bg-transparent outline-none text-sm text-[#E6D8C8] placeholder:text-[#E6D8C8]/60"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && search.trim()) {
-                    router.push(`/shop?q=${encodeURIComponent(search.trim())}`)
-                  }
-                }}
-              />
+                <Search className="w-4 h-4 text-[#E6D8C8] cursor-pointer" onClick={() => search.trim() && router.push(`/search?q=${encodeURIComponent(search.trim())}`)} />
+              <div className="flex-1 ml-2">
+                <SearchBox
+                  products={productsIndex}
+                  onSelect={(p: any) => {
+                    if (p && p.id && p.id.length === 24) router.push(`/products/${p.id}`)
+                  }}
+                  onQueryChange={(q: string) => setSearch(q)}
+                />
+              </div>
             </div>
           </div>
 

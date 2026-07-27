@@ -16,44 +16,44 @@ type Slide = {
 const sliderImages: Slide[] = [
   {
     image: '/banner1.png',
-    heading: 'FOR HIM',
+    heading: 'MADE TO MATTER',
     category: 'men-collection',
     cta: 'Discover',
   },
   
   {
     image: '/banner2.png',
-    heading: 'FOR HER',
+    heading: 'STYLE THAT ENDURES',
     category: 'office-collection',
     cta: 'Shop Now',
   },
   {
     image: '/banner3.png',
-    heading: 'FOR WORK',
+    heading: 'TIMELESS ELEGANCE',
     category: 'women-collection',
     cta: 'Explore',
   },
   {
     image: '/banner4.png',
-    heading: 'TRAVEL IN STYLE',
+    heading: 'CRAFTED FOR LIFE',
     category: 'travel-collection',
     cta: 'Discover',
   },
   {
     image: '/banner5.png',
-    heading: 'ACCESSORIES',
+    heading: 'REFINED FOREVER',
     category: 'new-arrivals',
     cta: 'Shop Now',
   },
   {
     image: '/banner6.png',
-    heading: 'NEW ARRIVALS',
+    heading: 'CARRY WITH CONFIDENCE',
     category: 'accessories-collection',
     cta: 'Explore',
   },
   {
     image: '/banner7.png',
-    heading: 'LIMITED EDITION',
+    heading: 'MODERN LUXURY',
     category: 'limited-edition',
     cta: 'Discover',
   }
@@ -63,6 +63,7 @@ const sliderImages: Slide[] = [
 export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState<number>(0)
   const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true)
+  const [assetVersion, setAssetVersion] = useState<string>('')
 
   useEffect(() => {
     if (!isAutoPlay) return
@@ -73,6 +74,12 @@ export default function Hero() {
 
     return () => clearInterval(interval)
   }, [isAutoPlay])
+
+  // Client-only cache buster so replaced images show immediately during development.
+  useEffect(() => {
+    // Use a timestamp so browsers refetch assets when component mounts.
+    setAssetVersion(String(Date.now()))
+  }, [])
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index)
@@ -105,14 +112,26 @@ export default function Hero() {
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <Image
-              src={slide.image || "/placeholder.svg"}
-              alt={slide.heading}
-              fill
-              className="object-cover"
-              priority={index === 0}
-              loading={index === 0 ? "eager" : "lazy"}
-            />
+            {typeof slide.image === 'string' && slide.image.startsWith('/') ? (
+              // For local images we render a plain <img> when adding a cache-busting query
+              // Next Image rejects local images with query strings unless configured. Using
+              // a regular <img> here avoids that while preserving object-cover behavior.
+              <img
+                src={`${(slide.image || '/placeholder.svg')}${assetVersion ? `?v=${assetVersion}` : ''}`}
+                alt={slide.heading}
+                className="object-cover w-full h-full"
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+            ) : (
+              <Image
+                src={slide.image || '/placeholder.svg'}
+                alt={slide.heading}
+                fill
+                className="object-cover"
+                priority={index === 0}
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+            )}
             <div className="absolute inset-0 bg-black/30" />
           </div>
         ))}

@@ -27,7 +27,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <strong>Phone</strong>
-                  <div className="opacity-80">+92 3184642266</div>
+                  <div className="opacity-80">+92 3717014449</div>
                 </div>
                 <div>
                   <strong>Address</strong>
