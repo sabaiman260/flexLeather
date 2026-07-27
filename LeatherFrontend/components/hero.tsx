@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
+import { apiFetch } from '@/lib/api'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 type Slide = {
@@ -64,16 +65,20 @@ export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState<number>(0)
   const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true)
   const [assetVersion, setAssetVersion] = useState<string>('')
+  const [remoteSlides, setRemoteSlides] = useState<Slide[] | null>(null)
+
+  // Determine which slides to show (remote banners if available, otherwise local)
+  const slides = remoteSlides && remoteSlides.length > 0 ? remoteSlides : sliderImages
 
   useEffect(() => {
     if (!isAutoPlay) return
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % sliderImages.length)
+      setCurrentSlide((prev) => (prev + 1) % slides.length)
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [isAutoPlay])
+  }, [isAutoPlay, slides.length])
 
   // Client-only cache buster so replaced images show immediately during development.
   useEffect(() => {
@@ -81,31 +86,73 @@ export default function Hero() {
     setAssetVersion(String(Date.now()))
   }, [])
 
+  // Fetch banners from backend; fall back silently to local sliderImages
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      try {
+        const res = await apiFetch('/api/v1/banners')
+        const data = res?.data || []
+        if (!mounted) return
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: Slide[] = data.map((b: any) => ({
+            image: b.imageUrl || '/placeholder.svg',
+            heading: b.title || b.subtitle || '',
+            category: b.category || '',
+            cta: b.ctaText || 'Shop',
+          }))
+          setRemoteSlides(mapped)
+        }
+      } catch (e) {
+        // ignore and fall back to local images
+        console.warn('Hero: failed to fetch banners, using fallback', e)
+      }
+    }
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   const goToSlide = (index: number) => {
-    setCurrentSlide(index)
+    const idx = slides.length > 0 ? index % slides.length : 0
+    setCurrentSlide(idx)
     setIsAutoPlay(false)
     setTimeout(() => setIsAutoPlay(true), 3000)
   }
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % sliderImages.length)
+    setCurrentSlide((prev) => (slides.length > 0 ? (prev + 1) % slides.length : 0))
     setIsAutoPlay(false)
     setTimeout(() => setIsAutoPlay(true), 3000)
   }
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + sliderImages.length) % sliderImages.length)
+    setCurrentSlide((prev) => (slides.length > 0 ? (prev - 1 + slides.length) % slides.length : 0))
     setIsAutoPlay(false)
     setTimeout(() => setIsAutoPlay(true), 3000)
   }
 
-  const currentImage = sliderImages[currentSlide]
+  // Ensure currentSlide is within bounds when slides length changes
+  useEffect(() => {
+    if (!slides || slides.length === 0) {
+      setCurrentSlide(0)
+      return
+    }
+    setCurrentSlide((prev) => {
+      if (prev < 0) return 0
+      if (prev >= slides.length) return prev % slides.length
+      return prev
+    })
+  }, [slides.length])
+
+  const currentImage = slides[currentSlide] || slides[0]
 
   return (
       <section className="w-full bg-background">
         <div className="relative w-full h-[18rem] md:h-[560px] lg:h-[720px] overflow-hidden">
         {/* Slider Images */}
-        {sliderImages.map((slide: Slide, index: number) => (
+        {slides.map((slide: Slide, index: number) => (
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ${

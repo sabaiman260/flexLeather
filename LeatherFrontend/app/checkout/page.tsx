@@ -24,6 +24,10 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [zip, setZip] = useState('')
+  // Validation error messages (inline)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [zipError, setZipError] = useState<string | null>(null)
+  const [transactionError, setTransactionError] = useState<string | null>(null)
 
   type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa' | 'payfast'
 
@@ -40,6 +44,9 @@ export default function CheckoutPage() {
       .then(res => setShippingCost(res?.data?.shippingCost ?? 200))
       .catch(() => {})
   }, [])
+
+  // Helper: normalize phone by removing spaces, hyphens and parentheses
+  const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, '')
 
   // Timeout for auth loading to prevent infinite loading screen
   useEffect(() => {
@@ -121,28 +128,45 @@ export default function CheckoutPage() {
     if (!emailRegex.test(email.trim())) { toast.error('Please enter a valid email address.'); return }
     if (!address.trim()) { toast.error('Please enter your shipping address.'); return }
     if (!city.trim()) { toast.error('Please enter your city.'); return }
-    if (!zip.trim()) { toast.error('Please enter your ZIP / postal code.'); return }
-    // ZIP / postal code: require 5 digits (common format); adjust if you prefer different length
+    if (!zip.trim()) { setZipError('Please enter your ZIP / postal code.'); return }
+    // ZIP / postal code: require 5 digits
     const zipRegex = /^[0-9]{5}$/
-    if (!zipRegex.test(zip.trim())) { toast.error('ZIP / postal code must be 5 digits.'); return }
+    if (!zipRegex.test(zip.trim())) { setZipError('ZIP / postal code must be 5 digits.'); return }
+    setZipError(null)
 
-    const phoneRegex = /^[0-9]{11}$/
-    if (!phone.trim()) { toast.error('Please enter your phone number.'); return }
-    if (!phoneRegex.test(phone.trim())) {
-      toast.error('Phone number must be exactly 11 digits (e.g. 03001234567).')
+    if (!phone.trim()) { setPhoneError('Please enter your phone number.'); return }
+    // Normalize phone by removing spaces, hyphens and parentheses before validation
+    const normalizedPhone = normalizePhone(phone.trim())
+    // E.164 international phone format: requires leading + and country code, max 15 digits
+    const phoneE164 = /^\+[1-9][0-9]{1,14}$/
+    if (!phoneE164.test(normalizedPhone)) {
+      setPhoneError('Phone number must be in E.164 format (e.g. +923001234567).')
       return
     }
+    setPhoneError(null)
 
     if (paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') {
-      if (!transactionId.trim()) {
-        toast.error('Please enter the Transaction / Reference ID from your payment confirmation.')
-        return
-      }
-      // Basic transaction/reference id validation (alphanumeric + dashes, min length 6)
-      const txRegex = /^[A-Za-z0-9\-]{6,}$/
-      if (!txRegex.test(transactionId.trim())) {
-        toast.error('Transaction/Reference ID must be at least 6 characters (letters, numbers or -).')
-        return
+      // If provided, validate transaction id format according to provider
+      if (transactionId && transactionId.trim()) {
+        const tx = transactionId.trim()
+        if (paymentMethod === 'easypaisa') {
+          const easypaisaRegex = /^[0-9]{11,12}$/
+          if (!easypaisaRegex.test(tx)) {
+            setTransactionError('EasyPaisa Transaction ID must be 11 or 12 digits.')
+            return
+          }
+        }
+        if (paymentMethod === 'jazzcash') {
+          const jazzRegex = /^[0-9]{12}$/
+          if (!jazzRegex.test(tx)) {
+            setTransactionError('JazzCash Transaction ID must be exactly 12 digits.')
+            return
+          }
+        }
+        setTransactionError(null)
+      } else {
+        // empty ID is allowed (optional), but clear any prior error
+        setTransactionError(null)
       }
     }
 
@@ -168,7 +192,7 @@ export default function CheckoutPage() {
       requestBody.guestDetails = {
         fullName: name,
         email,
-        phone,
+        phone: normalizedPhone,
         address: `${address}, ${city}, ${zip}`
       }
     } else {
@@ -180,7 +204,7 @@ export default function CheckoutPage() {
         requestBody.guestDetails = {
           fullName: name,
           email,
-          phone,
+          phone: normalizedPhone,
           address: currentAddress
         }
       }
@@ -243,7 +267,7 @@ export default function CheckoutPage() {
         items,
         total: finalTotal,
         paymentMethod,
-        customer: { name, email, address, city, zip }
+        customer: { name, email, address, city, zip, phone: normalizedPhone }
       }))
 
       clearCart()
@@ -288,6 +312,45 @@ export default function CheckoutPage() {
     }
   }
 
+  // Live validation effects for inline errors
+  useEffect(() => {
+    // Phone E.164 - accept user-friendly formats by normalizing before validation
+    if (!phone) {
+      setPhoneError(null)
+    } else {
+      const normalized = normalizePhone(phone.trim())
+      const phoneE164 = /^\+[1-9][0-9]{1,14}$/
+      setPhoneError(normalized && !phoneE164.test(normalized) ? 'Phone number must be in E.164 format (e.g. +923001234567).' : null)
+    }
+  }, [phone])
+
+  useEffect(() => {
+    if (!zip) {
+      setZipError(null)
+    } else {
+      const zipRegex = /^[0-9]{5}$/
+      setZipError(zip && !zipRegex.test(zip.trim()) ? 'ZIP / postal code must be 5 digits.' : null)
+    }
+  }, [zip])
+
+  useEffect(() => {
+    // Validate transactionId only when payment method requires it
+    if (!transactionId) {
+      setTransactionError(null)
+      return
+    }
+    const tx = transactionId.trim()
+    if (paymentMethod === 'easypaisa') {
+      const easypaisaRegex = /^[0-9]{11,12}$/
+      setTransactionError(!easypaisaRegex.test(tx) ? 'EasyPaisa Transaction ID must be 11 or 12 digits.' : null)
+    } else if (paymentMethod === 'jazzcash') {
+      const jazzRegex = /^[0-9]{12}$/
+      setTransactionError(!jazzRegex.test(tx) ? 'JazzCash Transaction ID must be exactly 12 digits.' : null)
+    } else {
+      setTransactionError(null)
+    }
+  }, [transactionId, paymentMethod])
+
   if (isLoading && !authLoadingTimeout) return <p className="text-center py-20">Loading user info...</p>
 
   return (
@@ -322,6 +385,13 @@ export default function CheckoutPage() {
                         autoComplete={label === 'Full Name' ? 'name' : label === 'Email' ? 'email' : label === 'Phone' ? 'tel' : 'address-level1'}
                         required
                       />
+                      {/* Inline validation messages */}
+                      {label === 'Phone' && phoneError && (
+                        <p className="text-xs text-red-600 mt-1">{phoneError}</p>
+                      )}
+                      {label === 'ZIP Code' && zipError && (
+                        <p className="text-xs text-red-600 mt-1">{zipError}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -365,7 +435,10 @@ export default function CheckoutPage() {
                       placeholder="Enter transaction or reference ID after payment"
                       className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                     />
-                    <p className="text-xs opacity-70 mt-2">If you already completed payment via your mobile app, enter the transaction/reference ID here to speed verification.</p>
+                      <p className="text-xs opacity-70 mt-2">If you already completed payment via your mobile app, enter the transaction/reference ID here to speed verification.</p>
+                      {transactionError && (
+                        <p className="text-xs text-red-600 mt-1">{transactionError}</p>
+                      )}
                   </div>
                 )}
               </div>
@@ -432,7 +505,15 @@ export default function CheckoutPage() {
                   <span>Total</span>
                   <span>PKR {finalTotal.toLocaleString()}</span>
                 </div>
-                <Button onClick={placeOrder} className="w-full" disabled={items.length === 0}>Place Order</Button>
+                {/* Disable place order if there are validation errors or required fields missing */}
+                {(() => {
+                  const requiredMissing = !name.trim() || !email.trim() || !address.trim() || !city.trim() || !zip.trim() || !phone.trim()
+                  const hasValidationErrors = !!phoneError || !!zipError || !!transactionError
+                  const disable = items.length === 0 || requiredMissing || hasValidationErrors
+                  return (
+                    <Button onClick={placeOrder} className="w-full" disabled={disable}>Place Order</Button>
+                  )
+                })()}
                 <Link href="/shop"><Button variant="outline" className="w-full mt-3">Continue Shopping</Button></Link>
               </div>
             </div>

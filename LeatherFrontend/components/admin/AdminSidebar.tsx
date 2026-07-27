@@ -7,6 +7,7 @@ export default function AdminSidebar() {
     { href: '/admin', label: 'Home' },
     { href: '/admin/categories', label: 'Category' },
     { href: '/admin/products', label: 'Products' },
+    { href: '/admin/banners', label: 'Banners' },
     { href: '/admin/buyers', label: 'Users' },
     { href: '/admin/settings', label: 'Settings' },
     { href: '/admin/analytics', label: 'Analytics' },
