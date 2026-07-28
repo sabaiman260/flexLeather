@@ -68,14 +68,26 @@ export const sendEmailWithRetry = async (mailOptions, maxRetries = 3) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             console.log(`${logPrefix} Attempt ${attempt}/${maxRetries} → Sending to: ${mailOptions.to}`);
-            
-            const info = await mailTransporter.sendMail(mailOptions);
-            
+
+            // Ensure replyTo and envelope are set to improve deliverability and bounce handling
+            const finalOptions = {
+                ...mailOptions,
+                replyTo: mailOptions.replyTo || mailOptions.from,
+                envelope: mailOptions.envelope || { from: mailOptions.from, to: mailOptions.to }
+            };
+
+            const info = await mailTransporter.sendMail(finalOptions);
+
+            // Log full transporter info to aid debugging (accepted/rejected/envelope/response)
             console.log(`${logPrefix} ✅ SUCCESS! MessageId: ${info.messageId}`);
-            console.log(`${logPrefix} From: ${mailOptions.from}`);
-            console.log(`${logPrefix} To: ${mailOptions.to}`);
-            console.log(`${logPrefix} Subject: ${mailOptions.subject}`);
-            
+            console.log(`${logPrefix} From: ${finalOptions.from}`);
+            console.log(`${logPrefix} To: ${finalOptions.to}`);
+            console.log(`${logPrefix} Subject: ${finalOptions.subject}`);
+            console.log(`${logPrefix} Accepted:`, info.accepted);
+            console.log(`${logPrefix} Rejected:`, info.rejected);
+            console.log(`${logPrefix} Envelope:`, info.envelope || finalOptions.envelope);
+            console.log(`${logPrefix} Response:`, info.response || 'n/a');
+
             return { success: true, info };
         } catch (error) {
             console.error(`${logPrefix} ❌ FAILED (Attempt ${attempt}/${maxRetries}):`, {

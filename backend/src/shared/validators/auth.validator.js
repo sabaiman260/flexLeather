@@ -16,7 +16,7 @@ export const registerSchema = z.object({
 
     phoneNumber: z
         .string()
-        .regex(/^[0-9]{11}$/, "Phone number must be 11 digits")
+        .regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format (e.g. +923001234567)")
         .optional(),
 
     userAddress: z
@@ -58,7 +58,7 @@ export const updateProfileSchema = z.object({
     userName: z.string().min(3, "Name must be at least 3 characters").optional(),
     phoneNumber: z
         .string()
-        .regex(/^[0-9]{11}$/, "Phone number must be 11 digits")
+        .regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format (e.g. +923001234567)")
         .optional(),
     userAddress: z.string().max(200, "Address cannot exceed 200 characters").optional(),
 });

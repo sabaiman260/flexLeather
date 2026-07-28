@@ -29,13 +29,19 @@ export default function Header() {
   const { totalItems } = useCart()
   const { user, isLoggedIn, logout, isLoading } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
+  // Track whether we've loaded the client auth state to avoid server/client mismatch
+  const [clientAuthLoaded, setClientAuthLoaded] = useState(false)
+  const [clientLoggedIn, setClientLoggedIn] = useState(false)
+  const [clientUser, setClientUser] = useState<any>(null)
   const pathname = usePathname()
   const [productsIndex, setProductsIndex] = useState<any[]>([])
 
   useEffect(() => {
-    setIsHydrated(true)
-  }, [])
+    // Populate client-only auth-derived state on mount/update
+    setClientAuthLoaded(true)
+    setClientLoggedIn(!isLoading && !!isLoggedIn)
+    setClientUser(user || null)
+  }, [isLoggedIn, isLoading, user])
 
   useEffect(() => {
     let mounted = true
@@ -84,7 +90,7 @@ export default function Header() {
   }, [mobileOpen])
 
   return (
-    <div className={isHydrated ? '' : 'invisible'}>
+    <div>
       {/* ================= MOBILE HEADER ================= */}
       <header className="block md:hidden fixed left-0 w-full z-50 bg-primary shadow-md border-0 border-t-0" style={{ top: 'var(--announcement-height, 0px)' }}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -108,11 +114,11 @@ export default function Header() {
 
             {/* On mobile we hide the horizontal login/signup and move them into the menu. Keep cart and hamburger compact. */}
 
-            {isHydrated && isLoggedIn && !isLoading ? (
+            {clientAuthLoaded && clientLoggedIn ? (
               <Link href="/profile" className="p-1">
                 <Avatar className="h-8 w-8 border border-[#E6D8C8] bg-[#E6D8C8]">
-                  <AvatarImage src={user?.profileImage} alt={user?.userName} />
-                  <AvatarFallback className="font-semibold" style={{ backgroundColor: '#E6D8C8', color: '#3B2A1A' }}>{user?.userName?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
+                  <AvatarImage src={clientUser?.profileImage} alt={clientUser?.userName} />
+                  <AvatarFallback className="font-semibold" style={{ backgroundColor: '#E6D8C8', color: '#3B2A1A' }}>{clientUser?.userName?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
               </Link>
             ) : null}
@@ -159,16 +165,16 @@ export default function Header() {
 
               <div className="border-t border-white/10 my-2" />
 
-              {isHydrated && !isLoggedIn && (
+              {(!clientAuthLoaded || !clientLoggedIn) && (
                 <>
                   <Link href="/login" className={`text-left py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Login</Link>
                   <Link href="/register" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Sign Up</Link>
                 </>
               )}
-              {isHydrated && isLoggedIn && (
+              {clientAuthLoaded && clientLoggedIn && (
                 <>
                   <Link href="/profile" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>My Profile</Link>
-                  {user?.userRole === 'admin' && <Link href="/admin" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Admin Panel</Link>}
+                  {clientUser?.userRole === 'admin' && <Link href="/admin" className={`py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`} onClick={() => setMobileOpen(false)}>Admin Panel</Link>}
                   <button onClick={() => { setMobileOpen(false); logout(); }} className={`text-left py-3 px-4 rounded-md hover:bg-white/10 text-sm tracking-wide ${NAV_TEXT_COLOR}`}>Log out</button>
                 </>
               )}
@@ -254,23 +260,23 @@ export default function Header() {
             </Link>
 
             {/* Signup as plain text (only if not logged in) */}
-            {isHydrated && !isLoggedIn && !isLoading && (
+            {(!clientAuthLoaded || !clientLoggedIn) && (
               <Link href="/register" className="hover:opacity-70 transition">
                 Sign Up
               </Link>
             )}
 
             {/* Avatar / Login */}
-            {isHydrated ? (isLoading ? null : isLoggedIn ? (
+            {clientAuthLoaded ? (isLoading ? null : clientLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger className="outline-none">
                   <Avatar className="h-8 w-8 border border-[#E6D8C8] bg-[#E6D8C8]">
-                    <AvatarImage src={user?.profileImage} alt={user?.userName} />
+                    <AvatarImage src={clientUser?.profileImage} alt={clientUser?.userName} />
                     <AvatarFallback
                       className="font-semibold"
                       style={{ backgroundColor: '#E6D8C8', color: '#3B2A1A' }}
                     >
-                      {user?.userName?.substring(0, 2).toUpperCase() || 'U'}
+                      {clientUser?.userName?.substring(0, 2).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
@@ -287,14 +293,14 @@ export default function Header() {
                 >
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user?.userName}</p>
-                      <p className="text-xs opacity-70">{user?.userEmail}</p>
+                      <p className="text-sm font-medium">{clientUser?.userName}</p>
+                      <p className="text-xs opacity-70">{clientUser?.userEmail}</p>
                     </div>
                   </DropdownMenuLabel>
 
                   <DropdownMenuSeparator className="bg-[#3B2A1A]/20" />
 
-                  {user?.userRole === 'admin' && (
+                  {clientUser?.userRole === 'admin' && (
                     <DropdownMenuItem
                       onClick={() => router.push('/admin')}
                       className="cursor-pointer hover:bg-[#3B2A1A]/10"
@@ -320,7 +326,10 @@ export default function Header() {
               </DropdownMenu>
             ) : (
               <Link href="/login" className="hover:opacity-70 transition">Login</Link>
-            )) : null}
+            )) : (
+              /* Initial server/client render: show login link until auth is resolved on client */
+              <Link href="/login" className="hover:opacity-70 transition">Login</Link>
+            )}
           </nav>
         </div>
       </header>
@@ -331,16 +340,25 @@ export default function Header() {
       <div className="md:hidden h-[64px]" />
       <div className="hidden md:block h-[88px]" />
 
-      {/* WhatsApp Floating Button */}
-      <div className="fixed bottom-4 right-4">
-        <a 
-          href="https://wa.me/923717014449" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600"
+      {/* WhatsApp Floating Widget: icon + message pill (no form) */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <a
+          href="https://wa.me/923717014449"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-3"
           aria-label="Chat with us on WhatsApp"
         >
-          <FaWhatsapp size={32} />
+          {/* Message pill: visible on hover and on small+ screens */}
+          <span className="hidden sm:inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-full shadow-lg text-sm font-medium transition-all duration-150 transform group-hover:translate-x-0 -translate-x-2 group-hover:opacity-100 opacity-90">
+            <FaWhatsapp size={18} />
+            <span>Need Help? Chat on WhatsApp</span>
+          </span>
+
+          {/* Circular icon (always visible) */}
+          <span className="flex items-center justify-center w-14 h-14 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600">
+            <FaWhatsapp size={24} />
+          </span>
         </a>
       </div>
     </div>

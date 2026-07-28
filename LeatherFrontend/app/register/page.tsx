@@ -20,34 +20,112 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [addressError, setAddressError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
+
+  // Validation helpers
+  const validateName = (v: string) => {
+    if (!v || !v.trim()) return 'Full name is required.'
+    return null
+  }
+
+  const validateEmail = (v: string) => {
+    if (!v || !v.trim()) return 'Email is required.'
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(v.trim()) ? null : 'Please enter a valid email address.'
+  }
+
+  const validatePhone = (v: string) => {
+    // Remove spaces, hyphens, parentheses
+    const raw = (v || '').replace(/[\s\-()]/g, '')
+    if (!raw) return 'Phone number is required.'
+
+    // Local Pakistan format: must start with '03' and be exactly 11 digits (e.g. 03001234567)
+    if (/^03[0-9]*$/.test(raw)) {
+      const localExact = /^03[0-9]{9}$/
+      return localExact.test(raw) ? null : 'Local phone numbers must be 11 digits and start with 03 (e.g. 03001234567).'
+    }
+
+    // International format: must start with +92 and have 12 digits total (92 + 10 more digits)
+    if (/^\+92[0-9]*$/.test(raw)) {
+      const intlExact = /^\+92[0-9]{10}$/
+      return intlExact.test(raw) ? null : 'International format must be +92 followed by 10 digits (e.g. +923001234567).'
+    }
+
+    // If it doesn't match either expected starting pattern, show generic guidance
+    return 'Enter a Pakistan mobile number starting with 03 (11 digits) or +92 (12 digits).'
+  }
+
+  const validateAddress = (v: string) => {
+    if (!v || !v.trim()) return 'Address is required.'
+    return null
+  }
+
+  const validatePassword = (v: string) => {
+    if (!v) return 'Password is required.'
+    if (v.length < 6) return 'Password must be at least 6 characters.'
+    const hasUpper = /[A-Z]/.test(v)
+    const hasLower = /[a-z]/.test(v)
+    const hasDigit = /[0-9]/.test(v)
+    const hasSpecial = /[^A-Za-z0-9]/.test(v)
+    if (!(hasUpper && hasLower && hasDigit && hasSpecial)) {
+      return 'Password must include uppercase, lowercase, number and special character.'
+    }
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      const phoneRegex = /^[0-9]{11}$/
-      if (!emailRegex.test(email)) {
-        throw new Error('Please enter a valid email address')
+      // Run validators and set inline errors
+      const nameErr = validateName(name)
+      const emailErr = validateEmail(email)
+      const phoneErr = validatePhone(phone)
+      const addressErr = validateAddress(address)
+      const passErr = validatePassword(password)
+
+      setNameError(nameErr)
+      setEmailError(emailErr)
+      setPhoneError(phoneErr)
+      setAddressError(addressErr)
+      setPasswordError(passErr || (password !== confirm ? 'Passwords do not match.' : null))
+
+      // If any validation failed, stop
+      if (nameErr || emailErr || phoneErr || addressErr || passErr || password !== confirm) {
+        setLoading(false)
+        return
       }
-      if (!phoneRegex.test(phone)) {
-        throw new Error('Phone number must be 11 digits')
-      }
-      if (!address.trim()) {
-        throw new Error('Address is required')
-      }
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters')
-      }
-      if (password !== confirm) {
-        throw new Error('Passwords do not match')
+
+      const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, '')
+      const normalizedPhoneRaw = normalizePhone(phone.trim())
+
+      // Convert to backend-expected E.164 format: +92XXXXXXXXXX
+      // If user entered +92... -> keep as-is
+      // If user entered 03xxxxxxxxx or 0xxxxxxxxxx -> convert to +92xxxxxxxxxx
+      // If user entered 92xxxxxxxxxx (no +) -> prefix +
+      let backendPhone = ''
+      if (normalizedPhoneRaw.startsWith('+')) {
+        backendPhone = normalizedPhoneRaw
+      } else if (normalizedPhoneRaw.startsWith('03')) {
+        backendPhone = '+92' + normalizedPhoneRaw.slice(1)
+      } else if (normalizedPhoneRaw.startsWith('0') && normalizedPhoneRaw.length === 11) {
+        backendPhone = '+92' + normalizedPhoneRaw.slice(1)
+      } else if (/^92[0-9]{10}$/.test(normalizedPhoneRaw)) {
+        backendPhone = '+' + normalizedPhoneRaw
+      } else {
+        // fallback: send the raw normalized value (will likely be rejected by server)
+        backendPhone = normalizedPhoneRaw
       }
 
       const fd = new FormData()
       fd.append('userName', name)
-      fd.append('userEmail', email)
+      fd.append('userEmail', email.trim())
       fd.append('userPassword', password)
-      fd.append('phoneNumber', phone)
+      fd.append('phoneNumber', backendPhone)
       fd.append('userAddress', address)
       if (profileFile) fd.append('profileImage', profileFile)
 
@@ -63,14 +141,30 @@ export default function RegisterPage() {
       }
 
       if (response?.data?.code === 'VERIFICATION_RESENT') {
-        const msg = 'This email is already registered but not verified. A new verification email has been sent. Please check your email.'
-        toast.info(msg)
+        const emailSent = !!response?.data?.emailSent
+        const emailQueued = !!response?.data?.emailQueued
+        if (emailSent) {
+          const msg = 'This email is already registered but not verified. A new verification email has been sent. Please check your email.'
+          toast.info(msg)
+        } else if (emailQueued) {
+          toast.error('Verification email could not be delivered right now. It has been queued and will be retried. If you do not receive it, contact support.')
+        } else {
+          toast.error('Verification email could not be sent. Please contact support if you do not receive an email.')
+        }
         setTimeout(() => window.location.href = '/login', 2000)
         return
       }
 
       // Success case - new user registration
       toast.success('Registered successfully! Check your email to verify your account.')
+      // If backend indicates email not sent, show an additional warning
+      if (response?.data && response.data.emailSent === false) {
+        if (response.data.emailQueued) {
+          toast.error('Verification email delivery failed and has been queued. It will be retried automatically.')
+        } else {
+          toast.error('Verification email delivery failed. Please contact support if you do not receive an email.')
+        }
+      }
       setTimeout(() => window.location.href = '/login', 2000)
     } catch (err: any) {
       // Only console.error for real failures (500, network, DB errors)
@@ -88,7 +182,78 @@ export default function RegisterPage() {
       }
 
       if (!isExpectedCase) {
-        toast.error(err?.message || 'Registration failed. Please try again.')
+        // Map backend validation errors (several possible shapes) to inline fields
+        // 1) Sometimes backend returns an array at top-level (e.g. AJV): [{ path: ['phoneNumber'], message: '...' }]
+        // 2) Or { errors: [...] }
+        // 3) Or { details: [...] }
+        const setFieldFromEntry = (entry: any) => {
+          const msg = entry?.message || entry?.msg || JSON.stringify(entry)
+          const path = entry?.path || entry?.instancePath || entry?.dataPath || entry?.param || entry?.path
+          const pathArr = Array.isArray(path) ? path : (typeof path === 'string' && path ? [path] : null)
+
+          if (pathArr) {
+            const p = (pathArr[0] || '').toString().toLowerCase()
+            if (p.includes('phone')) {
+              setPhoneError(msg)
+              return true
+            }
+            if (p.includes('email')) {
+              setEmailError(msg)
+              return true
+            }
+            if (p.includes('address')) {
+              setAddressError(msg)
+              return true
+            }
+            if (p.includes('password')) {
+              setPasswordError(msg)
+              return true
+            }
+          }
+          return false
+        }
+
+        let handled = false
+
+        if (Array.isArray(err?.body) && err.body.length) {
+          for (const e of err.body) {
+            if (setFieldFromEntry(e)) handled = true
+          }
+        }
+
+        if (!handled && Array.isArray(err?.body?.errors) && err.body.errors.length) {
+          for (const e of err.body.errors) {
+            if (setFieldFromEntry(e)) handled = true
+          }
+        }
+
+        if (!handled && Array.isArray(err?.details) && err.details.length) {
+          for (const e of err.details) {
+            if (setFieldFromEntry(e)) handled = true
+          }
+        }
+
+        if (!handled && Array.isArray(err?.body?.details) && err.body.details.length) {
+          for (const e of err.body.details) {
+            if (setFieldFromEntry(e)) handled = true
+          }
+        }
+
+        if (handled) {
+          // At least one field-level error was applied inline — no generic toast
+          return
+        }
+
+        // Fallback: format any arrays into a friendly message
+        if (Array.isArray(err?.details) && err.details.length) {
+          const msgs = err.details.map((d: any) => d.message || JSON.stringify(d)).join('; ')
+          toast.error(msgs)
+        } else if (err?.body && Array.isArray(err.body?.errors) && err.body.errors.length) {
+          const msgs = err.body.errors.map((d: any) => (d.message ? `${d.path ? `${d.path.join('.')} ` : ''}${d.message}` : JSON.stringify(d))).join('; ')
+          toast.error(msgs)
+        } else {
+          toast.error(err?.message || 'Registration failed. Please try again.')
+        }
       }
     } finally {
       setLoading(false)
@@ -167,6 +332,9 @@ export default function RegisterPage() {
   */
   // ================= END GOOGLE OAUTH FUNCTIONS DISABLED =================
 
+  // Form validity derived from validators (prevents submit until all pass)
+  const isFormValid = !validateName(name) && !validateEmail(email) && !validatePhone(phone) && !validateAddress(address) && !validatePassword(password) && password === confirm
+
   return (
     <>
       <Header />
@@ -182,7 +350,7 @@ export default function RegisterPage() {
             <h1 className="text-3xl font-serif font-light tracking-wide mb-8 text-center">
               Create Account
             </h1>
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSubmit} noValidate>
               <div>
                 <label className="block text-sm font-light mb-2">Full Name</label>
                 <input
@@ -190,8 +358,10 @@ export default function RegisterPage() {
                   className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                   placeholder="John Doe"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); setNameError(null) }}
+                  onBlur={() => setNameError(validateName(name))}
                 />
+                {nameError && <p className="text-xs text-red-600 mt-1">{nameError}</p>}
               </div>
 
               <div>
@@ -201,8 +371,10 @@ export default function RegisterPage() {
                   className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                   placeholder="your@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
+                  onBlur={() => setEmailError(validateEmail(email))}
                 />
+                {emailError && <p className="text-xs text-red-600 mt-1">{emailError}</p>}
               </div>
 
               <div>
@@ -210,10 +382,12 @@ export default function RegisterPage() {
                 <input
                   type="tel"
                   className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
-                  placeholder="03xxxxxxxxx"
+                  placeholder="e.g. 03001234567 or +923001234567"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => { setPhone(e.target.value); setPhoneError(null) }}
+                  onBlur={() => setPhoneError(validatePhone(phone))}
                 />
+                {phoneError && <p className="text-xs text-red-600 mt-1">{phoneError}</p>}
               </div>
 
               <div>
@@ -223,8 +397,10 @@ export default function RegisterPage() {
                   className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
                   placeholder="Street, City, ZIP"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => { setAddress(e.target.value); setAddressError(null) }}
+                  onBlur={() => setAddressError(validateAddress(address))}
                 />
+                {addressError && <p className="text-xs text-red-600 mt-1">{addressError}</p>}
               </div>
 
               <div>
@@ -257,7 +433,8 @@ export default function RegisterPage() {
                     className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition pr-10"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setPasswordError(null) }}
+                    onBlur={() => setPasswordError(validatePassword(password))}
                     autoComplete="new-password"
                   />
                   <button
@@ -280,9 +457,11 @@ export default function RegisterPage() {
                     className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition pr-10"
                     placeholder="••••••••"
                     value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    autoComplete="new-password"
+                      onChange={(e) => { setConfirm(e.target.value); setPasswordError(null) }}
+                      onBlur={() => setPasswordError(password !== confirm ? 'Passwords do not match.' : validatePassword(password))}
+                      autoComplete="new-password"
                   />
+                  {passwordError && <p className="text-xs text-red-600 mt-1">{passwordError}</p>}
                   <button
                     type="button"
                     onClick={() => setShowConfirm(v => !v)}
@@ -295,7 +474,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={loading || !isFormValid}>
                 {loading ? 'Creating...' : 'Create Account'}
               </Button>
             </form>

@@ -55,6 +55,7 @@ const registerUser = asyncHandler(async (req, res) => {
         const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
 
         // Send verification email with retry logic (DO NOT fail if email fails)
+        let resendEmailResult = null;
         try {
             const mailOptions = {
                 from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
@@ -64,12 +65,12 @@ const registerUser = asyncHandler(async (req, res) => {
             };
             
             console.log('[auth:register] Attempting to resend verification email to:', userEmail);
-            const result = await sendEmailWithRetry(mailOptions);
+            resendEmailResult = await sendEmailWithRetry(mailOptions);
             
-            if (result.success) {
+            if (resendEmailResult?.success) {
                 console.log('[auth:register] ✅ Resend verification email sent successfully to:', userEmail);
             } else {
-                console.error('[auth:register] ❌ Resend verification email failed after retries:', userEmail);
+                console.error('[auth:register] ❌ Resend verification email failed after retries:', userEmail, 'queued=', !!resendEmailResult?.queued);
             }
         } catch (error) {
             console.error('[auth:register] ❌ Unexpected error resending verification email:', {
@@ -82,7 +83,9 @@ const registerUser = asyncHandler(async (req, res) => {
             new ApiResponse(200, {
                 code: "VERIFICATION_RESENT",
                 userId: existingUser._id,
-                userEmail: existingUser.userEmail
+                userEmail: existingUser.userEmail,
+                emailSent: !!resendEmailResult?.success,
+                emailQueued: !!resendEmailResult?.queued
             }, "Verification email has been resent. Please check your email.")
         );
     }
@@ -174,6 +177,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const verificationLink = `${base}/api/v1/auth/verify/${hashedToken}`;
 
     // 5️⃣ Send verification email with retry logic (DO NOT fail registration)
+    let registrationEmailResult = null;
     try {
         const mailOptions = {
             from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
@@ -183,14 +187,15 @@ const registerUser = asyncHandler(async (req, res) => {
         };
         
         console.log('[auth:register] Attempting to send verification email to:', userEmail);
-        const result = await sendEmailWithRetry(mailOptions);
+        registrationEmailResult = await sendEmailWithRetry(mailOptions);
         
-        if (result.success) {
+        if (registrationEmailResult?.success) {
             console.log('[auth:register] ✅ Verification email sent successfully to:', userEmail);
         } else {
             console.error('[auth:register] ❌ Verification email failed after retries:', {
                 to: userEmail,
-                error: result.error?.message
+                error: registrationEmailResult?.error?.message,
+                queued: !!registrationEmailResult?.queued
             });
         }
     } catch (error) {
@@ -211,7 +216,9 @@ const registerUser = asyncHandler(async (req, res) => {
                 userRole: user.userRole,
                 phoneNumber: user.phoneNumber,
                 userAddress: user.userAddress,
-                ...(profileSignedUrl && { profileImageUrl: profileSignedUrl })
+                ...(profileSignedUrl && { profileImageUrl: profileSignedUrl }),
+                emailSent: !!registrationEmailResult?.success,
+                emailQueued: !!registrationEmailResult?.queued
             },
             "Registration successful. Please verify your email."
         )

@@ -51,7 +51,7 @@ export default function CartPage() {
                   {cartItems.map(item => (
                     <div key={(item as any)._cartId || item.id} className="flex gap-4 items-center border border-border p-4 rounded relative">
                       <div className="w-24 h-24 relative p-1 flex items-center justify-center">
-                          <Image src={cloudinaryOptimize(item.image ?? '/placeholder.jpg', 400) || (item.image ?? '/placeholder.jpg')} alt={item.name} fill className="object-contain" />
+                          <Image src={cloudinaryOptimize(item.image ?? '/placeholder.jpg', 400) || (item.image ?? '/placeholder.jpg')} alt={item.name} fill sizes="100vw" className="object-contain" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-serif text-sm mb-1">{item.name}</h4>

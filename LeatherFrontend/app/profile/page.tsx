@@ -108,9 +108,23 @@ export default function ProfilePage() {
   const onSave = async () => {
     setSaving(true)
     try {
+      // Normalize phone before sending (allow user-friendly input)
+      const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, '')
+      const normalized = normalizePhone(form.phoneNumber || '')
+      // Validate normalized phone against E.164 if provided
+      if (normalized) {
+        const phoneE164 = /^\+[1-9][0-9]{1,14}$/
+        if (!phoneE164.test(normalized)) {
+          alert('Phone number must be in E.164 format (e.g. +923001234567).')
+          setSaving(false)
+          return
+        }
+      }
+
+      const payload = { ...form, phoneNumber: normalized }
       await apiFetch('/api/v1/auth/me', {
         method: 'PUT',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
       alert('Profile updated')
     } catch (e: any) {

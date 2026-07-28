@@ -252,7 +252,7 @@ export default function AdminProductsPage() {
                 <tr key={p._id} className={`hover:bg-muted/50 transition ${p.isActive === false ? 'opacity-50' : ''}`}>
                   <td className="p-4">
                       <div className="relative w-12 h-12 bg-gray-100 rounded overflow-hidden p-1 flex items-center justify-center">
-                        <Image src={cloudinaryOptimize(p.imageUrls?.[0] || '/placeholder.jpg', 200) || (p.imageUrls?.[0] || '/placeholder.jpg')} alt={p.name} fill className="object-contain" />
+                        <Image src={cloudinaryOptimize(p.imageUrls?.[0] || '/placeholder.jpg', 200) || (p.imageUrls?.[0] || '/placeholder.jpg')} alt={p.name} fill sizes="100vw" className="object-contain" />
                       </div>
                   </td>
                   <td className="p-4 font-medium">{p.name}</td>

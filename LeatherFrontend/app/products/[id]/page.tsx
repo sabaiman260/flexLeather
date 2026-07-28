@@ -308,6 +308,7 @@ export default function ProductDetail() {
                     src={cloudinaryOptimize(mainImage, 1200) || mainImage}
                     alt={product.name}
                     fill
+                    sizes="100vw"
                     className="object-cover"
                     priority
                     loading="eager"
@@ -328,6 +329,7 @@ export default function ProductDetail() {
                         src={cloudinaryOptimize(img, 400) || img}
                         alt={`${product.name} view ${i + 1}`}
                         fill
+                        sizes="100vw"
                         className="object-cover"
                       />
                     </div>
@@ -573,7 +575,7 @@ export default function ProductDetail() {
                                 <div className="flex flex-wrap gap-2 mt-3">
                                   {r.imageUrls.map((u, i) => (
                                     <div key={i} className="w-20 h-20 relative rounded overflow-hidden border border-gray-100 flex-shrink-0">
-                                      <Image src={cloudinaryOptimize(u, 200) || u} alt={`review photo ${i + 1}`} fill className="object-cover" />
+                                      <Image src={cloudinaryOptimize(u, 200) || u} alt={`review photo ${i + 1}`} fill sizes="100vw" className="object-cover" />
                                     </div>
                                   ))}
                                 </div>
@@ -839,6 +841,7 @@ export default function ProductDetail() {
                     src={mainImage}
                     alt={product.name}
                     fill
+                    sizes="100vw"
                     className="object-contain"
                     style={{
                       transform: `scale(${zoomLevel})`,

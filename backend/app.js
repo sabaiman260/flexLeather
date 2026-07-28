@@ -17,6 +17,7 @@ import adminRouter from "./src/modules/admin/admin.routes.js";
 import cloudinaryRouter from "./src/modules/cloudinary/cloudinary.route.js";
 import settingsRouter from "./src/modules/settings/settings.routes.js";
 import bannerRouter from "./src/modules/banner/banner.routes.js";
+import debugRouter from "./src/modules/debug/debug.routes.js";
 
 const app = express();
 
@@ -74,6 +75,7 @@ app.use("/api/v1/admin", adminRouter);
 app.use('/api/v1/cloudinary', cloudinaryRouter);
 app.use('/api/v1/settings', settingsRouter);
 app.use('/api/v1/banners', bannerRouter);
+app.use('/api/v1/debug', debugRouter);
 
 /* =======================
    HEALTH CHECK                                 paste link in browser :   https://server.theflexleather.com/health

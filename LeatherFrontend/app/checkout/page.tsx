@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   // Validation error messages (inline)
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [zipError, setZipError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [transactionError, setTransactionError] = useState<string | null>(null)
 
   type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa' | 'payfast'
@@ -122,10 +123,11 @@ export default function CheckoutPage() {
     }
 
     if (!name.trim()) { toast.error('Please enter your full name.'); return }
-    if (!email.trim()) { toast.error('Please enter your email address.'); return }
+    if (!email.trim()) { setEmailError('Please enter your email address.'); return }
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email.trim())) { toast.error('Please enter a valid email address.'); return }
+    if (!emailRegex.test(email.trim())) { setEmailError('Please enter a valid email address.'); return }
+    setEmailError(null)
     if (!address.trim()) { toast.error('Please enter your shipping address.'); return }
     if (!city.trim()) { toast.error('Please enter your city.'); return }
     if (!zip.trim()) { setZipError('Please enter your ZIP / postal code.'); return }
@@ -325,6 +327,16 @@ export default function CheckoutPage() {
   }, [phone])
 
   useEffect(() => {
+    // Live email validation (inline)
+    if (!email) {
+      setEmailError(null)
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      setEmailError(email && !emailRegex.test(email.trim()) ? 'Please enter a valid email address.' : null)
+    }
+  }, [email])
+
+  useEffect(() => {
     if (!zip) {
       setZipError(null)
     } else {
@@ -351,12 +363,20 @@ export default function CheckoutPage() {
     }
   }, [transactionId, paymentMethod])
 
-  if (isLoading && !authLoadingTimeout) return <p className="text-center py-20">Loading user info...</p>
+  // Avoid returning early here because returning a different root
+  // structure than the normal render can cause hydration mismatches
+  // (server may render the loading paragraph while the client
+  // renders the full page including the Header). Always render
+  // the `Header` and show the loading state below it to keep the
+  // server and client HTML consistent.
 
   return (
     <>
       <Header />
-      <main className="bg-background min-h-screen">
+      {isLoading && !authLoadingTimeout ? (
+        <p className="text-center py-20">Loading user info...</p>
+      ) : (
+        <main className="bg-background min-h-screen">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-12">
           <h1 className="text-3xl md:text-4xl font-serif font-light tracking-wide mb-12">Checkout</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -386,6 +406,9 @@ export default function CheckoutPage() {
                         required
                       />
                       {/* Inline validation messages */}
+                      {label === 'Email' && emailError && (
+                        <p className="text-xs text-red-600 mt-1">{emailError}</p>
+                      )}
                       {label === 'Phone' && phoneError && (
                         <p className="text-xs text-red-600 mt-1">{phoneError}</p>
                       )}
@@ -454,7 +477,7 @@ export default function CheckoutPage() {
                     <div key={item.id} className="flex gap-4 border-b border-border pb-4 last:border-0">
                         <div className="relative w-16 h-16 bg-muted shrink-0 p-1 flex items-center justify-center">
                           {item.image && (
-                            <Image src={item.image} alt={item.name} fill className="object-contain" />
+                            <Image src={item.image} alt={item.name} fill sizes="100vw" className="object-contain" />
                           )}
                         </div>
                       <div className="flex-1 min-w-0">
@@ -520,6 +543,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
+      )}
       <Footer />
     </>
   )

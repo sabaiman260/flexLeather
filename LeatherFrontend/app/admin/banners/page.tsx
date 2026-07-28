@@ -182,7 +182,7 @@ export default function AdminBannersPage() {
                   <td className="p-4">
                     <div className="relative w-24 h-16 bg-gray-100 rounded overflow-hidden p-1 flex items-center justify-center">
                       {b.imageUrl ? (
-                        <Image src={b.imageUrl} alt={b.title || 'Banner'} fill className="object-cover" />
+                        <Image src={b.imageUrl} alt={b.title || 'Banner'} fill sizes="100vw" className="object-cover" />
                       ) : (
                         <div className="text-xs text-gray-500">No image</div>
                       )}
