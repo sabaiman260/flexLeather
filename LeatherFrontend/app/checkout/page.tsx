@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCart } from '@/components/cart-context'
 import { useAuth } from '@/components/auth-provider'
 import Header from '@/components/header'
@@ -24,16 +24,24 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [zip, setZip] = useState('')
-  // Validation error messages (inline)
-  const [phoneError, setPhoneError] = useState<string | null>(null)
-  const [zipError, setZipError] = useState<string | null>(null)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [transactionError, setTransactionError] = useState<string | null>(null)
+  // Validation state: errors per-field and touched flags
+  const [errors, setErrors] = useState<Record<string, string | null>>({
+    name: null,
+    email: null,
+    phone: null,
+    address: null,
+    city: null,
+    zip: null,
+    transactionId: null,
+    paymentNumber: null
+  })
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa' | 'payfast'
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
   const [transactionId, setTransactionId] = useState('')
+  const [paymentNumber, setPaymentNumber] = useState('')
   const [coupon, setCoupon] = useState('')
   const [discount, setDiscount] = useState(0)
   const [authLoadingTimeout, setAuthLoadingTimeout] = useState(false)
@@ -48,6 +56,83 @@ export default function CheckoutPage() {
 
   // Helper: normalize phone by removing spaces, hyphens and parentheses
   const normalizePhone = (raw: string) => raw.replace(/[\s\-()]/g, '')
+
+  // refs for inputs so we can focus/scroll to first invalid field on submit
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const setFieldRef = (key: string) => (el: HTMLInputElement | null) => {
+    inputRefs.current[key] = el
+  }
+
+  // Validate single field and return error string or null
+  const validateField = (field: string): string | null => {
+    const val = (v?: string) => (v ?? '').trim()
+    switch (field) {
+      case 'name':
+        return val(name) ? null : 'Please enter your full name.'
+      case 'email': {
+        if (!val(email)) return 'Please enter your email address.'
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        return emailRegex.test(email) ? null : 'Please enter a valid email address.'
+      }
+      case 'address':
+        return val(address) ? null : 'Please enter your shipping address.'
+      case 'city':
+        return val(city) ? null : 'Please enter your city.'
+      case 'zip': {
+        if (!val(zip)) return 'Please enter your ZIP / postal code.'
+        const zipRegex = /^[0-9]{5}$/
+        return zipRegex.test(zip) ? null : 'ZIP / postal code must be 5 digits.'
+      }
+      case 'phone': {
+        if (!val(phone)) return 'Please enter your phone number.'
+        const normalizedPhone = normalizePhone(phone)
+        const phoneE164 = /^\+[1-9][0-9]{1,14}$/
+        return phoneE164.test(normalizedPhone) ? null : 'Phone number must be in E.164 format (e.g. +923001234567).'
+      }
+      case 'paymentNumber': {
+        if (!(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa')) return null
+        if (!val(paymentNumber)) return 'Please enter your JazzCash / EasyPaisa mobile number.'
+        const pn = paymentNumber.trim()
+        const pnDigits = pn.replace(/[^0-9+]/g, '')
+        const validLocal = /^(?:0?3)[0-9]{9}$/.test(pnDigits)
+        const validE164 = /^\+[1-9][0-9]{1,14}$/.test(pnDigits)
+        return validLocal || validE164 ? null : 'Enter a valid mobile number (e.g. 03001234567 or +923001234567).'
+      }
+      case 'transactionId': {
+        if (!(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa')) return null
+        if (!val(transactionId)) return 'Please enter the transaction/reference ID after payment.'
+        const tx = transactionId.trim()
+        if (paymentMethod === 'easypaisa') {
+          const easypaisaRegex = /^[0-9]{11,12}$/
+          return easypaisaRegex.test(tx) ? null : 'EasyPaisa Transaction ID must be 11 or 12 digits.'
+        }
+        if (paymentMethod === 'jazzcash') {
+          const jazzRegex = /^[0-9]{12}$/
+          return jazzRegex.test(tx) ? null : 'JazzCash Transaction ID must be exactly 12 digits.'
+        }
+        return null
+      }
+      default:
+        return null
+    }
+  }
+
+  // Validate all required fields and return list of invalid keys
+  const validateAll = (): string[] => {
+    const keys = ['name', 'email', 'phone', 'address', 'city', 'zip'] as string[]
+    if (paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') {
+      keys.push('paymentNumber', 'transactionId')
+    }
+    const newErrors: Record<string, string | null> = {}
+    const invalid: string[] = []
+    keys.forEach(k => {
+      const e = validateField(k)
+      newErrors[k] = e
+      if (e) invalid.push(k)
+    })
+    setErrors(prev => ({ ...prev, ...newErrors }))
+    return invalid
+  }
 
   // Timeout for auth loading to prevent infinite loading screen
   useEffect(() => {
@@ -122,55 +207,25 @@ export default function CheckoutPage() {
       return
     }
 
-    if (!name.trim()) { toast.error('Please enter your full name.'); return }
-    if (!email.trim()) { setEmailError('Please enter your email address.'); return }
-    // Basic email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email.trim())) { setEmailError('Please enter a valid email address.'); return }
-    setEmailError(null)
-    if (!address.trim()) { toast.error('Please enter your shipping address.'); return }
-    if (!city.trim()) { toast.error('Please enter your city.'); return }
-    if (!zip.trim()) { setZipError('Please enter your ZIP / postal code.'); return }
-    // ZIP / postal code: require 5 digits
-    const zipRegex = /^[0-9]{5}$/
-    if (!zipRegex.test(zip.trim())) { setZipError('ZIP / postal code must be 5 digits.'); return }
-    setZipError(null)
-
-    if (!phone.trim()) { setPhoneError('Please enter your phone number.'); return }
-    // Normalize phone by removing spaces, hyphens and parentheses before validation
-    const normalizedPhone = normalizePhone(phone.trim())
-    // E.164 international phone format: requires leading + and country code, max 15 digits
-    const phoneE164 = /^\+[1-9][0-9]{1,14}$/
-    if (!phoneE164.test(normalizedPhone)) {
-      setPhoneError('Phone number must be in E.164 format (e.g. +923001234567).')
+    // Run full-form validation on submit. If any invalid fields, mark them touched
+    const invalid = validateAll()
+    if (invalid.length) {
+      setTouched(prev => {
+        const copy = { ...prev }
+        invalid.forEach(k => { copy[k] = true })
+        return copy
+      })
+      // Focus first invalid field smoothly
+      const first = invalid[0]
+      const el = inputRefs.current[first]
+      if (el && typeof el.focus === 'function') {
+        try { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch {}
+      }
       return
     }
-    setPhoneError(null)
 
-    if (paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') {
-      // If provided, validate transaction id format according to provider
-      if (transactionId && transactionId.trim()) {
-        const tx = transactionId.trim()
-        if (paymentMethod === 'easypaisa') {
-          const easypaisaRegex = /^[0-9]{11,12}$/
-          if (!easypaisaRegex.test(tx)) {
-            setTransactionError('EasyPaisa Transaction ID must be 11 or 12 digits.')
-            return
-          }
-        }
-        if (paymentMethod === 'jazzcash') {
-          const jazzRegex = /^[0-9]{12}$/
-          if (!jazzRegex.test(tx)) {
-            setTransactionError('JazzCash Transaction ID must be exactly 12 digits.')
-            return
-          }
-        }
-        setTransactionError(null)
-      } else {
-        // empty ID is allowed (optional), but clear any prior error
-        setTransactionError(null)
-      }
-    }
+    // All validations passed; normalize phone for backend
+    const normalizedPhone = normalizePhone(phone.trim())
 
     const orderItems = items.map(i => ({
       productId: i.id,
@@ -247,7 +302,7 @@ export default function CheckoutPage() {
           if ((paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && transactionId.trim()) {
             const manualRes = await apiFetch('/api/v1/payments/manual', {
               method: 'POST',
-              body: JSON.stringify({ orderId: order?._id, method: paymentMethod, transactionId: transactionId.trim() })
+              body: JSON.stringify({ orderId: order?._id, method: paymentMethod, transactionId: transactionId.trim(), paymentNumber: paymentNumber.trim() })
             })
             paymentRes = manualRes?.data
           } else {
@@ -314,54 +369,7 @@ export default function CheckoutPage() {
     }
   }
 
-  // Live validation effects for inline errors
-  useEffect(() => {
-    // Phone E.164 - accept user-friendly formats by normalizing before validation
-    if (!phone) {
-      setPhoneError(null)
-    } else {
-      const normalized = normalizePhone(phone.trim())
-      const phoneE164 = /^\+[1-9][0-9]{1,14}$/
-      setPhoneError(normalized && !phoneE164.test(normalized) ? 'Phone number must be in E.164 format (e.g. +923001234567).' : null)
-    }
-  }, [phone])
-
-  useEffect(() => {
-    // Live email validation (inline)
-    if (!email) {
-      setEmailError(null)
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      setEmailError(email && !emailRegex.test(email.trim()) ? 'Please enter a valid email address.' : null)
-    }
-  }, [email])
-
-  useEffect(() => {
-    if (!zip) {
-      setZipError(null)
-    } else {
-      const zipRegex = /^[0-9]{5}$/
-      setZipError(zip && !zipRegex.test(zip.trim()) ? 'ZIP / postal code must be 5 digits.' : null)
-    }
-  }, [zip])
-
-  useEffect(() => {
-    // Validate transactionId only when payment method requires it
-    if (!transactionId) {
-      setTransactionError(null)
-      return
-    }
-    const tx = transactionId.trim()
-    if (paymentMethod === 'easypaisa') {
-      const easypaisaRegex = /^[0-9]{11,12}$/
-      setTransactionError(!easypaisaRegex.test(tx) ? 'EasyPaisa Transaction ID must be 11 or 12 digits.' : null)
-    } else if (paymentMethod === 'jazzcash') {
-      const jazzRegex = /^[0-9]{12}$/
-      setTransactionError(!jazzRegex.test(tx) ? 'JazzCash Transaction ID must be exactly 12 digits.' : null)
-    } else {
-      setTransactionError(null)
-    }
-  }, [transactionId, paymentMethod])
+  // Note: inline validation will be triggered onBlur and while typing only for fields that are 'touched'.
 
   // Avoid returning early here because returning a different root
   // structure than the normal render can cause hydration mismatches
@@ -392,31 +400,41 @@ export default function CheckoutPage() {
                     { label: 'Address', value: address, setter: setAddress },
                     { label: 'City', value: city, setter: setCity },
                     { label: 'ZIP Code', value: zip, setter: setZip }
-                  ].map(({ label, value, setter }) => (
-                    <div key={label}>
-                      <label className="block text-sm font-light mb-2">{label}</label>
-                      <input
-                        type="text"
-                        name={label.toLowerCase().replace(' ', '-')}
-                        placeholder={`Enter ${label.toLowerCase()}`}
-                        className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
-                        value={value}
-                        onChange={(e) => setter(e.target.value)}
-                        autoComplete={label === 'Full Name' ? 'name' : label === 'Email' ? 'email' : label === 'Phone' ? 'tel' : 'address-level1'}
-                        required
-                      />
-                      {/* Inline validation messages */}
-                      {label === 'Email' && emailError && (
-                        <p className="text-xs text-red-600 mt-1">{emailError}</p>
-                      )}
-                      {label === 'Phone' && phoneError && (
-                        <p className="text-xs text-red-600 mt-1">{phoneError}</p>
-                      )}
-                      {label === 'ZIP Code' && zipError && (
-                        <p className="text-xs text-red-600 mt-1">{zipError}</p>
-                      )}
-                    </div>
-                  ))}
+                  ].map(({ label, value, setter }) => {
+                    const key = label === 'Full Name' ? 'name' : label === 'Email' ? 'email' : label === 'Phone' ? 'phone' : label === 'Address' ? 'address' : label === 'City' ? 'city' : 'zip'
+                    const showError = !!touched[key] && !!errors[key]
+                    return (
+                      <div key={label}>
+                        <label className="block text-sm font-light mb-2">{label}</label>
+                        <input
+                          ref={setFieldRef(key)}
+                          type="text"
+                          name={key}
+                          placeholder={`Enter ${label.toLowerCase()}`}
+                          className={`w-full px-4 py-3 text-sm outline-none focus:border-gray-300 transition ${showError ? 'border-red-500' : 'border-border'}`}
+                          value={value}
+                          onChange={(e) => {
+                            setter(e.target.value)
+                            // live-update error only if user already touched this field
+                            if (touched[key] || errors[key]) {
+                              const err = validateField(key)
+                              setErrors(prev => ({ ...prev, [key]: err }))
+                            }
+                          }}
+                          onBlur={() => {
+                            setTouched(prev => ({ ...prev, [key]: true }))
+                            const err = validateField(key)
+                            setErrors(prev => ({ ...prev, [key]: err }))
+                          }}
+                          autoComplete={label === 'Full Name' ? 'name' : label === 'Email' ? 'email' : label === 'Phone' ? 'tel' : 'address-level1'}
+                        />
+                        {/* Inline validation messages */}
+                        {showError && (
+                          <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -450,18 +468,46 @@ export default function CheckoutPage() {
                 {/* Manual payment transaction input */}
                 {(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && (
                   <div className="mb-4">
-                    <label className="block text-sm font-light mb-2">Transaction / Reference ID (optional)</label>
+                    <label className="block text-sm font-light mb-2">Your JazzCash / EasyPaisa Number</label>
                     <input
+                      ref={setFieldRef('paymentNumber')}
+                      type="text"
+                      value={paymentNumber}
+                      onChange={e => {
+                        setPaymentNumber(e.target.value)
+                        if (touched['paymentNumber'] || errors['paymentNumber']) {
+                          const err = validateField('paymentNumber')
+                          setErrors(prev => ({ ...prev, paymentNumber: err }))
+                        }
+                      }}
+                      onBlur={() => { setTouched(prev => ({ ...prev, paymentNumber: true })); setErrors(prev => ({ ...prev, paymentNumber: validateField('paymentNumber') })) }}
+                      placeholder="Enter the mobile number you used for payment (e.g. 03001234567)"
+                      className={`w-full px-4 py-3 text-sm outline-none focus:border-gray-300 transition ${touched['paymentNumber'] && errors['paymentNumber'] ? 'border-red-500' : 'border-border'}`}
+                    />
+                    {touched['paymentNumber'] && errors['paymentNumber'] && (
+                      <p className="text-xs text-red-600 mt-1">{errors['paymentNumber']}</p>
+                    )}
+
+                    <label className="block text-sm font-light mb-2 mt-4">Transaction / Reference ID</label>
+                    <input
+                      ref={setFieldRef('transactionId')}
                       type="text"
                       value={transactionId}
-                      onChange={e => setTransactionId(e.target.value)}
+                      onChange={e => {
+                        setTransactionId(e.target.value)
+                        if (touched['transactionId'] || errors['transactionId']) {
+                          const err = validateField('transactionId')
+                          setErrors(prev => ({ ...prev, transactionId: err }))
+                        }
+                      }}
+                      onBlur={() => { setTouched(prev => ({ ...prev, transactionId: true })); setErrors(prev => ({ ...prev, transactionId: validateField('transactionId') })) }}
                       placeholder="Enter transaction or reference ID after payment"
-                      className="w-full border border-border px-4 py-3 text-sm outline-none focus:border-gray-300 transition"
+                      className={`w-full px-4 py-3 text-sm outline-none focus:border-gray-300 transition ${touched['transactionId'] && errors['transactionId'] ? 'border-red-500' : 'border-border'}`}
                     />
-                      <p className="text-xs opacity-70 mt-2">If you already completed payment via your mobile app, enter the transaction/reference ID here to speed verification.</p>
-                      {transactionError && (
-                        <p className="text-xs text-red-600 mt-1">{transactionError}</p>
-                      )}
+                    <p className="text-xs opacity-70 mt-2">Enter the transaction/reference ID you received after completing payment. Both fields are required for JazzCash / EasyPaisa.</p>
+                    {touched['transactionId'] && errors['transactionId'] && (
+                      <p className="text-xs text-red-600 mt-1">{errors['transactionId']}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -528,15 +574,8 @@ export default function CheckoutPage() {
                   <span>Total</span>
                   <span>PKR {finalTotal.toLocaleString()}</span>
                 </div>
-                {/* Disable place order if there are validation errors or required fields missing */}
-                {(() => {
-                  const requiredMissing = !name.trim() || !email.trim() || !address.trim() || !city.trim() || !zip.trim() || !phone.trim()
-                  const hasValidationErrors = !!phoneError || !!zipError || !!transactionError
-                  const disable = items.length === 0 || requiredMissing || hasValidationErrors
-                  return (
-                    <Button onClick={placeOrder} className="w-full" disabled={disable}>Place Order</Button>
-                  )
-                })()}
+                {/* Place Order: always enabled (unless cart empty). Clicking runs full validation and focuses first invalid field. */}
+                <Button onClick={placeOrder} className="w-full" disabled={items.length === 0}>Place Order</Button>
                 <Link href="/shop"><Button variant="outline" className="w-full mt-3">Continue Shopping</Button></Link>
               </div>
             </div>

@@ -23,7 +23,7 @@ export default function ContactPage() {
               <div className="text-sm opacity-80 space-y-3">
                 <div>
                   <strong>Email</strong>
-                  <div className="opacity-80">flexleather.official@gmail.com</div>
+                  <div className="opacity-80">info@theflexleather.com</div>
                 </div>
                 <div>
                   <strong>Phone</strong>

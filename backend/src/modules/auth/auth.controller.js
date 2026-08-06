@@ -58,7 +58,7 @@ const registerUser = asyncHandler(async (req, res) => {
         let resendEmailResult = null;
         try {
             const mailOptions = {
-                from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
                 to: userEmail,
                 subject: "Verify Your Email - FlexLeather",
                 html: userVerificationMailBody(existingUser.userName, verificationLink)
@@ -180,7 +180,7 @@ const registerUser = asyncHandler(async (req, res) => {
     let registrationEmailResult = null;
     try {
         const mailOptions = {
-            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+            from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
             to: userEmail,
             subject: "Verify Your Email - FlexLeather",
             html: userVerificationMailBody(userName, verificationLink)
@@ -365,7 +365,7 @@ const forgotPasswordMail = asyncHandler(async (req, res) => {
     // Send password reset email with retry logic
     try {
         const mailOptions = {
-            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+            from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
             to: userEmail,
             subject: "Password Reset - FlexLeather",
             html: userForgotPasswordMailBody(user.userName, resetLink),

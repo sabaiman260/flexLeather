@@ -20,14 +20,14 @@ export default function FaqPage() {
               <AccordionItem value="q1">
                 <AccordionTrigger>How long does shipping take?</AccordionTrigger>
                 <AccordionContent>
-                  Delivery times depend on your location. Standard shipping usually takes 5–10 business days; international shipping may take longer. Orders are processed within 1–2 business days.
+                 Delivery times depend on your location and the shipping method you choose. Orders are processed within 3–5 business days.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="q2">
                 <AccordionTrigger>What is your returns policy?</AccordionTrigger>
                 <AccordionContent>
-                  We accept returns within 14 days of delivery for items in unworn condition. Please use the 'Shipping & Returns' page for full instructions and the return form.
+                  We accept returns only for genuine issues within 7 days of delivery. Please read our return policy carefully. This page explains the conditions under which returns or replacements will be accepted, along with the steps to complete the process. For detailed instructions please visit our Shipping & Returns page.
                 </AccordionContent>
               </AccordionItem>
 

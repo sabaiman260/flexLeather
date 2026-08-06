@@ -203,7 +203,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
                     try {
                         const result = await sendEmailWithRetry({
-                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                            from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
                             to: customerEmail,
                             subject: `Order Confirmation - Order #${newOrder._id}`,
                             html: mailHtml
@@ -262,7 +262,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
                 try {
                     const result = await sendEmailWithRetry({
-                        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                        from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
                         to: customerEmail,
                         subject: `Order Confirmation - Order #${newOrder._id}`,
                         html: mailHtml
@@ -425,7 +425,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
                     try {
                         const result = await sendEmailWithRetry({
-                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                            from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
                             to: customerEmail,
                             subject: `Order Confirmed - Order #${order._id}`,
                             html: mailHtml
@@ -514,7 +514,7 @@ const updateOrderPaymentStatus = asyncHandler(async (req, res) => {
                     const html = paymentConfirmationMailBody(paymentDetails);
                     try {
                         const result = await sendEmailWithRetry({
-                            from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                            from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
                             to: customerEmail,
                             subject: `Payment Confirmed - Order #${order._id}`,
                             html

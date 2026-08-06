@@ -342,24 +342,25 @@ export default function Header() {
 
       {/* WhatsApp Floating Widget: icon + message pill (no form) */}
       <div className="fixed bottom-4 right-4 z-50">
-        <a
-          href="https://wa.me/923717014449"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex items-center gap-3"
-          aria-label="Chat with us on WhatsApp"
-        >
-          {/* Message pill: visible on hover and on small+ screens */}
-          <span className="hidden sm:inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-full shadow-lg text-sm font-medium transition-all duration-150 transform group-hover:translate-x-0 -translate-x-2 group-hover:opacity-100 opacity-90">
-            <FaWhatsapp size={18} />
-            <span>Need Help? Chat on WhatsApp</span>
-          </span>
+          <div className="relative group">
+            {/* Popover: hidden on very small screens, shows on hover/focus */}
+            <div className="hidden sm:flex items-center mr-3 absolute -right-64 bottom-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200">
+              <div className="bg-[#E6D8C8] text-[#3B2A1A] px-4 py-2 rounded-lg shadow-md text-sm font-medium max-w-xs">
+                <div className="font-semibold">Need Help?</div>
+                <div className="text-xs opacity-80">Chat on WhatsApp</div>
+              </div>
+            </div>
 
-          {/* Circular icon (always visible) */}
-          <span className="flex items-center justify-center w-14 h-14 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600">
-            <FaWhatsapp size={24} />
-          </span>
-        </a>
+            <a
+              href="https://wa.me/923717014449"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 focus:outline-none"
+              aria-label="Chat with us on WhatsApp"
+            >
+              <FaWhatsapp size={32} />
+            </a>
+          </div>
       </div>
     </div>
   )

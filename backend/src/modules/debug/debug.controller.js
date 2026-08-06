@@ -7,7 +7,7 @@ const sendTestEmail = asyncHandler(async (req, res) => {
   if (!to) return res.status(400).json(new ApiResponse(400, null, "Missing 'to' email address"));
 
   const mailOptions = {
-    from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+    from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
     to,
     subject: 'Test Email from FlexLeather',
     html: `<p>This is a test email sent at ${new Date().toISOString()}</p>`

@@ -30,7 +30,8 @@ dotenv.config();
 
 /**
  * Brevo SMTP Transport Configuration
- * Default verified sender: patina@theflexleather.com
+ * Default verified sender: info@theflexleather.com
+ * Sender display name: The Flex Leather
  */
 const mailTransporter = nodemailer.createTransport({
     host: process.env.BREVO_SMTP_HOST || "smtp-relay.brevo.com",
@@ -148,9 +149,9 @@ export const testEmailConnection = async () => {
 const mailGenerator = new Mailgen({
     theme: "default",
     product: {
-        name: "FlexLeather",
+        name: "The Flex Leather",
         link: process.env.CLIENT_URL || "http://localhost:3000",
-        copyright: `© 2026 FlexLeather. All rights reserved.`,
+        copyright: `© ${new Date().getFullYear()} The Flex Leather. All rights reserved.`,
     },
 });
 

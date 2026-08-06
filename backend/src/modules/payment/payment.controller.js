@@ -243,7 +243,7 @@ const updatePaymentStatus = asyncHandler(async (req, res) => {
                     };
 
                     const result = await sendEmailWithRetry({
-                        from: process.env.BREVO_VERIFIED_EMAIL || 'patina@theflexleather.com',
+                        from: process.env.BREVO_VERIFIED_EMAIL ? `"The Flex Leather" <${process.env.BREVO_VERIFIED_EMAIL}>` : '"The Flex Leather" <info@theflexleather.com>',
                         to: customerEmail,
                         subject: `Payment Confirmed - Order #${paymentEmailDetails.orderId} - FlexLeather`,
                         html: paymentConfirmationMailBody(paymentEmailDetails)
