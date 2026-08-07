@@ -150,22 +150,21 @@ export default function Hero() {
 
   return (
       <section className="w-full bg-background">
-        <div className="relative w-full h-[18rem] sm:h-[22rem] md:h-[36rem] lg:h-[48rem] overflow-hidden">
+        <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[16/6]">
         {/* Slider Images */}
         {slides.map((slide: Slide, index: number) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 flex items-center justify-center bg-black ${
+            className={`absolute inset-0 transition-opacity duration-1000 flex items-center justify-center ${
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
           >
             {typeof slide.image === 'string' && slide.image.startsWith('/') ? (
-              // On small screens use object-contain so image isn't cropped, on larger screens
-              // preserve object-cover to maintain the designed hero fill.
+              // Use object-cover so the image covers the aspect-ratio frame smoothly.
               <img
                 src={`${(slide.image || '/placeholder.svg')}${assetVersion ? `?v=${assetVersion}` : ''}`}
                 alt={slide.heading}
-                className="object-contain sm:object-cover object-center w-full h-full"
+                className="object-cover object-center w-full h-full"
                 loading={index === 0 ? 'eager' : 'lazy'}
               />
             ) : (
@@ -173,18 +172,17 @@ export default function Hero() {
                 src={slide.image || '/placeholder.svg'}
                 alt={slide.heading}
                 fill
-                className="object-contain sm:object-cover object-center"
+                className="object-cover object-center"
                 priority={index === 0}
                 loading={index === 0 ? 'eager' : 'lazy'}
               />
             )}
-            <div className="absolute inset-0 bg-black/30" />
           </div>
         ))}
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-          <div className="text-center animate-fade-up px-4 sm:px-6">
-            <h2 className="text-white text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-light tracking-widest mb-4 sm:mb-6">
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
+          <div className="text-center animate-fade-up max-w-3xl w-full px-2 sm:px-6">
+            <h2 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-widest mb-3 sm:mb-6">
               {currentImage.heading}
             </h2>
             <Link href="/shop">
@@ -211,8 +209,8 @@ export default function Hero() {
           <ChevronRight size={24} />
         </button>
 
-        <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
-          {sliderImages.map((_, index: number) => (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
+          {slides.map((_, index: number) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
