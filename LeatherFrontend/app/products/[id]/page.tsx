@@ -265,6 +265,39 @@ export default function ProductDetail() {
     router.push('/cart')
   }
 
+  const WHATSAPP_NUMBER = '923717014449' // +92 3717014449
+
+  const handleBuyNow = () => {
+    if (!product) return
+
+    // Prevent buying sold-out products
+    if (product['stock'] !== undefined && product['stock'] <= 0) {
+      setError('This product is currently sold out.')
+      return
+    }
+
+    setError(null)
+    const effectivePrice = product.discount && product.discount > 0
+      ? Math.round(product.price * (1 - product.discount / 100))
+      : product.price
+
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: effectivePrice,
+      originalPrice: product.discount && product.discount > 0 ? product.price : undefined,
+      discount: product.discount && product.discount > 0 ? product.discount : undefined,
+      image: product.images[0] || '/placeholder.jpg',
+      selectedColor: selectedColor,
+      selectedSize: selectedSize,
+      availableColors: product.colors,
+      availableSizes: product.sizes
+    }, quantity)
+
+    // Redirect user straight to checkout
+    router.push('/checkout')
+  }
+
   if (loadingProduct) {
     return (
       <>
@@ -468,11 +501,42 @@ export default function ProductDetail() {
 
                 <Button
                   onClick={handleAddToCart}
-                  className={`w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6`}
+                  className={`w-full bg-primary hover:bg-primary/90 text-primary-foreground h-10 flex items-center justify-center`}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   {product['stock'] !== undefined && product['stock'] <= 0 ? 'Sold Out' : 'Add to Cart'}
                 </Button>
+                
+                {/* Secondary actions: Buy Now, WhatsApp order, stock and COD badge */}
+                <div className="mt-2 space-y-2">
+                  <Button
+                    onClick={handleBuyNow}
+                    className="w-full bg-accent text-accent-foreground h-10 flex items-center justify-center"
+                  >
+                    Buy it now
+                  </Button>
+
+                  <a
+                    href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hello, I would like to order: ' + product.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center text-white h-10 flex items-center justify-center rounded border-0"
+                    style={{ backgroundColor: '#25D366' }}
+                  >
+                    Order on WhatsApp
+                  </a>
+
+                  <div className="flex items-center gap-3">
+                    {product['stock'] !== undefined && product['stock'] > 0 && (
+                      <span className="text-sm text-emerald-600">✓ {product['stock']} items in stock</span>
+                    )}
+
+                    <span className="inline-flex items-center gap-2 text-sm border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">
+                      <span className="text-xs">💵</span>
+                      <span>Cash on Delivery Available</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

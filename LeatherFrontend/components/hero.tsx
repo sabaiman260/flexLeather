@@ -150,7 +150,7 @@ export default function Hero() {
 
   return (
       <section className="w-full bg-background">
-        <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] lg:aspect-[16/6]">
+        <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[16/6] lg:aspect-[16/6]">
         {/* Slider Images */}
         {slides.map((slide: Slide, index: number) => (
           <div

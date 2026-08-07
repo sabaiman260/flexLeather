@@ -98,9 +98,9 @@ export default function Footer() {
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5" />
                 <span>
-                  Maverick Engineers G-13<br />
-                  Innovista Rachna DHA<br />
-                  Gujranwala, Pakistan
+                  Plot # 3 Climax  Garden<br />
+                  Near Allena Hotel<br />
+                  GT Road Gujranwala, Pakistan
                 </span>
               </div>
             </div>
