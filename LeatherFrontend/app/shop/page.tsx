@@ -42,8 +42,8 @@ export default function ShopPage() {
   const categories = [
     { label: 'Women', slug: 'women' },
     { label: 'Men', slug: 'men' },
-    { label: 'Kids', slug: 'kids' },
-    { label: 'Office', slug: 'office' },
+    { label: 'Accessories', slug: 'accessories' },
+    { label: 'Office & Travel', slug: 'office-travel' },
     { label: 'Gift Ideas', slug: 'gift-ideas' },
   ]
 

@@ -36,8 +36,8 @@ export default function AnnouncementBar() {
 
   return (
     <div className="fixed top-0 left-0 z-60 w-full bg-accent text-accent-foreground border-b border-accent">
-      <div className="container-max mx-auto overflow-hidden py-2">
-        <div className="inline-flex min-w-full animate-marquee whitespace-nowrap text-sm uppercase tracking-[0.18em]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 overflow-hidden py-1 sm:py-2">
+        <div className="inline-flex min-w-full animate-marquee whitespace-nowrap text-xs sm:text-sm uppercase tracking-[0.14em]">
           <span className="mr-8">{announcementText}</span>
           <span className="mr-8">{announcementText}</span>
         </div>

@@ -93,7 +93,7 @@ export default function Header() {
     <div>
       {/* ================= MOBILE HEADER ================= */}
       <header className="block md:hidden fixed left-0 w-full z-50 bg-primary shadow-md border-0 border-t-0" style={{ top: 'var(--announcement-height, 0px)' }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div className="relative w-10 h-10">
               <Image src="/logos.png" alt="Flex Leather Logo" width={40} height={40} className="object-contain" priority />
@@ -194,7 +194,7 @@ export default function Header() {
         "
         style={{ top: 'var(--announcement-height, 0px)' }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-4 group">
@@ -219,8 +219,8 @@ export default function Header() {
           </Link>
 
           {/* Search */}
-          <div className="flex-1 mx-12 max-w-xl">
-            <div className="flex items-center border border-white/20 bg-white/10 px-4 py-2 rounded-full focus-within:bg-white/20 transition-all">
+          <div className="flex-1 mx-4 sm:mx-12 max-w-xl">
+            <div className="flex items-center border border-white/20 bg-white/10 px-3 sm:px-4 py-2 rounded-full focus-within:bg-white/20 transition-all">
                 <Search className="w-4 h-4 text-[#E6D8C8] cursor-pointer" onClick={() => search.trim() && router.push(`/search?q=${encodeURIComponent(search.trim())}`)} />
               <div className="flex-1 ml-2">
                 <SearchBox
@@ -337,7 +337,7 @@ export default function Header() {
       {/* Login Modal removed — header now links to /login page */}
 
       {/* Spacer so content starts below fixed header (match header height) */}
-      <div className="md:hidden h-[64px]" />
+      <div className="md:hidden h-[60px] sm:h-[64px]" />
       <div className="hidden md:block h-[88px]" />
 
       {/* WhatsApp Floating Widget: icon + message pill (no form) */}

@@ -23,12 +23,12 @@ const categories = [
   {
     name: 'OFFICE & TRAVEL',
     image: '/travel.jpg',
-    link: '/shop?category=kids'
+    link: '/shop?category=office-travel'
   },
   {
     name: 'ACCESSORIES',
     image: '/office.jpg',
-    link: '/shop?category=office'
+    link: '/shop?category=accessories'
   }
 ]
 
