@@ -15,6 +15,7 @@ import { pushGtmEcommerceEvent } from '@/lib/gtm'
 
 type UIProduct = {
   id: string
+  slug?: string
   name: string
   price: number
   image: string
@@ -42,8 +43,8 @@ export default function ShopPage() {
   const categories = [
     { label: 'Women', slug: 'women' },
     { label: 'Men', slug: 'men' },
-    { label: 'Accessories', slug: 'accessories' },
-    { label: 'Office & Travel', slug: 'office-travel' },
+    { label: 'Kids', slug: 'kids' },
+    { label: 'Office', slug: 'office' },
     { label: 'Gift Ideas', slug: 'gift-ideas' },
   ]
 
@@ -61,6 +62,7 @@ export default function ShopPage() {
 
       const mapped: UIProduct[] = list.map(p => ({
         id: p._id,
+        slug: (p as any).slug || undefined,
         name: p.name,
         price: p.price,
         discount: p.discount || 0,
@@ -270,7 +272,7 @@ export default function ShopPage() {
                   {filteredProducts.map(p => (
                     <Link
                       key={p.id}
-                      href={`/products/${p.id}`}
+                      href={`/products/${p.slug || p.id}`}
                       className="group flex flex-col h-full"
                     >
                       <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-0 flex items-center justify-center">
@@ -315,7 +317,7 @@ export default function ShopPage() {
 
                           // If product has options, redirect to product page
                           if ((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) {
-                            window.location.href = `/products/${p.id}`
+                            window.location.href = `/products/${p.slug || p.id}`
                             return
                           }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { cloudinaryOptimize } from '@/lib/cloudinary'
 import Link from 'next/link'
@@ -47,7 +47,8 @@ type Review = {
 
 export default function ProductDetail() {
   const params = useParams()
-  const productId = params.id as string
+  // Route param may be named `slug` (preferred) or an `id` fallback.
+  const productParam = ((params as any)?.slug || (params as any)?.id || '') as string
   const [product, setProduct] = useState<Product | null>(null)
   const [loadingProduct, setLoadingProduct] = useState<boolean>(true)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -74,14 +75,14 @@ export default function ProductDetail() {
   const [guestFullName, setGuestFullName] = useState<string>('')
   const [guestEmail, setGuestEmail] = useState<string>('')
 
-  const [mainImage, setMainImage] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [mainImage, setMainImage] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
 
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       try {
-        const res = await apiFetch(`/api/v1/products/get/${productId}`)
+        const res = await apiFetch(`/api/v1/products/get/${productParam}`)
         const p = res?.data?.product
         const urls: string[] = res?.data?.imageUrls || []
         const mapped: Product = {
@@ -95,7 +96,6 @@ export default function ProductDetail() {
           images: urls.length ? urls : ['/placeholder.jpg'],
           colors: p.colors || [],
           sizes: p.sizes || [],
-          // add stock to product state (optional) - extend Product type dynamically
           ...(typeof p.stock === 'number' ? { stock: p.stock } : {})
         }
         setProduct(mapped)
@@ -105,7 +105,7 @@ export default function ProductDetail() {
       }
       try {
         setLoadingInitial(true)
-        const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=1&limit=${limit}`, {
+        const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productParam}?page=1&limit=${limit}`, {
           method: 'GET',
           credentials: 'include'
         })
@@ -126,14 +126,14 @@ export default function ProductDetail() {
       const token = localStorage.getItem('accessToken')
       if (token) {
         try {
-          const res3 = await apiFetch(`/api/v1/orders/eligible-for-review/${productId}`)
+          const res3 = await apiFetch(`/api/v1/orders/eligible-for-review/${productParam}`)
           setEligibleOrders(res3?.data || [])
         } catch {
           // Silently fail for protected API calls
         }
       }
     })()
-  }, [productId])
+  }, [productParam, limit])
 
   // Refetch product when admin updates products elsewhere (storage flag)
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function ProductDetail() {
       if (e.key === 'products_last_updated') {
         ;(async () => {
           try {
-            const res = await apiFetch(`/api/v1/products/get/${productId}`)
+            const res = await apiFetch(`/api/v1/products/get/${productParam}`)
             const p = res?.data?.product
             const urls: string[] = res?.data?.imageUrls || []
             if (p) {
@@ -167,7 +167,7 @@ export default function ProductDetail() {
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [productId])
+  }, [productParam])
 
   // Fire view_item GTM event when product details are available
   useEffect(() => {
@@ -204,34 +204,33 @@ export default function ProductDetail() {
     } else {
       setMainImage(null)
     }
-  }, [product]);
+  }, [product])
 
   const handleThumbnailClick = (image: string | undefined | null) => {
     if (!image) return
     setMainImage(image)
-  };
+  }
 
   const handleImageClick = () => {
-    if (mainImage) setIsModalOpen(true); // Open the modal only when image exists
-  };
+    if (mainImage) setIsModalOpen(true)
+  }
 
   const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 3)); // Increase zoom level up to 3x
-  };
+    setZoomLevel(prev => Math.min(prev + 0.5, 3))
+  }
 
   const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 0.5, 1)); // Decrease zoom level down to 1x
-  };
+    setZoomLevel(prev => Math.max(prev - 0.5, 1))
+  }
 
   const closeModal = () => {
-    setIsModalOpen(false); // Close the modal
-    setZoomLevel(1); // Reset zoom level
-  };
+    setIsModalOpen(false)
+    setZoomLevel(1)
+  }
 
   const handleAddToCart = () => {
     if (!product) return
 
-    // Prevent adding sold-out products
     if (product['stock'] !== undefined && product['stock'] <= 0) {
       setError('This product is currently sold out.')
       return
@@ -265,12 +264,11 @@ export default function ProductDetail() {
     router.push('/cart')
   }
 
-  const WHATSAPP_NUMBER = '923717014449' // +92 3717014449
+  const WHATSAPP_NUMBER = '923717014449'
 
   const handleBuyNow = () => {
     if (!product) return
 
-    // Prevent buying sold-out products
     if (product['stock'] !== undefined && product['stock'] <= 0) {
       setError('This product is currently sold out.')
       return
@@ -294,7 +292,6 @@ export default function ProductDetail() {
       availableSizes: product.sizes
     }, quantity)
 
-    // Redirect user straight to checkout
     router.push('/checkout')
   }
 
@@ -327,8 +324,6 @@ export default function ProductDetail() {
       <Header />
       <main className="bg-background min-h-screen">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
-          {/* Breadcrumb removed per request */}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Product Images */}
             <div>
@@ -393,12 +388,11 @@ export default function ProductDetail() {
                     )}
                   </div>
                 ) : (
-                      <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
-                    )}
-                  {product['stock'] !== undefined && product['stock'] <= 0 && (
-                    <p className="text-sm text-red-600 font-medium mt-2">This product is currently sold out.</p>
-                  )}
-              
+                  <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
+                )}
+                {product['stock'] !== undefined && product['stock'] <= 0 && (
+                  <p className="text-sm text-red-600 font-medium mt-2">This product is currently sold out.</p>
+                )}
               </div>
 
               <p className="text-sm leading-relaxed mb-8 opacity-80">
@@ -483,7 +477,7 @@ export default function ProductDetail() {
                     id="product-quantity"
                     type="number"
                     value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     aria-label="Quantity"
                     title="Quantity"
                     className="flex-1 text-center outline-none bg-transparent"
@@ -661,7 +655,7 @@ export default function ProductDetail() {
                           const prevPage = page - 1
                           setLoadingMore(true)
                           try {
-                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=${prevPage}&limit=${limit}`, { credentials: 'include' })
+                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productParam}?page=${prevPage}&limit=${limit}`, { credentials: 'include' })
                             if (resp.ok) {
                               const data = await resp.json().catch(() => ({}))
                               setReviews(data?.data?.reviews || [])
@@ -679,7 +673,7 @@ export default function ProductDetail() {
                           const nextPage = page + 1
                           setLoadingMore(true)
                           try {
-                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=${nextPage}&limit=${limit}`, { credentials: 'include' })
+                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productParam}?page=${nextPage}&limit=${limit}`, { credentials: 'include' })
                             if (resp.ok) {
                               const data = await resp.json().catch(() => ({}))
                               setReviews(data?.data?.reviews || [])
@@ -700,9 +694,9 @@ export default function ProductDetail() {
             {reviewTab === 'submit' && (
               <div className="max-w-xl mx-auto">
                 <form
-                  onSubmit={async (e) => {
+                  onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
                     e.preventDefault()
-                    const token = localStorage.getItem('accessToken')
+                    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
                     if (token && !selectedOrderId) {
                       toast.error('Please select an order to review')
                       return
@@ -712,7 +706,7 @@ export default function ProductDetail() {
                       return
                     }
                     const fd = new FormData()
-                    fd.append('product', productId)
+                    fd.append('product', productParam)
                     fd.append('orderId', token ? selectedOrderId : 'guest')
                     fd.append('rating', String(reviewRating))
                     if (reviewComment) fd.append('comment', reviewComment)
@@ -756,187 +750,159 @@ export default function ProductDetail() {
                       <label className="block text-sm mb-1.5 text-gray-700">Select Order</label>
                       <select
                         value={selectedOrderId}
-                        onChange={(e) => setSelectedOrderId(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedOrderId(e.target.value)}
                         className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400 transition"
-                        required
                       >
-                        <option value="">Choose an order...</option>
-                        {eligibleOrders.map(order => (
-                          <option key={order._id} value={order._id}>
-                            Order #{order._id.slice(-6)} — {new Date(order.createdAt).toLocaleDateString()} — PKR {order.totalAmount?.toLocaleString()}
+                        <option value="">-- Select an eligible order --</option>
+                        {eligibleOrders.map((ord: any) => (
+                          <option key={ord._id} value={ord._id}>
+                            Order #{ord._id.slice(-6)} ({new Date(ord.createdAt).toLocaleDateString()})
                           </option>
                         ))}
                       </select>
                     </div>
                   )}
-                  {typeof window !== 'undefined' && localStorage.getItem('accessToken') && eligibleOrders.length === 0 && (
-                    <div className="text-sm text-muted-foreground p-3 bg-muted rounded">
-                      No eligible orders. You can only review products from paid and delivered orders.
-                    </div>
-                  )}
-                  {/* Guest name/email */}
+
+                  {/* Guest inputs (if not logged in) */}
                   {typeof window !== 'undefined' && !localStorage.getItem('accessToken') && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input placeholder="Your name (optional)" value={guestFullName} onChange={(e) => setGuestFullName(e.target.value)} className="focus:border-gray-400 focus:ring-0" />
-                      <Input placeholder="Your email (optional)" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="focus:border-gray-400 focus:ring-0" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm mb-1.5 text-gray-700">Full Name</label>
+                        <Input
+                          type="text"
+                          value={guestFullName}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGuestFullName(e.target.value)}
+                          placeholder="John Doe"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-1.5 text-gray-700">Email Address</label>
+                        <Input
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGuestEmail(e.target.value)}
+                          placeholder="john@example.com"
+                          required
+                        />
+                      </div>
                     </div>
                   )}
-                  {/* Rating + file upload */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm mb-1.5 text-gray-700">Rating</label>
-                      <select
-                        className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400 transition"
-                        value={reviewRating}
-                        onChange={(e) => setReviewRating(Number(e.target.value))}
-                      >
-                        {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} Star{r > 1 ? 's' : ''}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm mb-1.5 text-gray-700">Photos (optional)</label>
-                      <Input id="review-images" type="file" multiple onChange={(e) => setReviewImages(e.target.files)} className="focus:border-gray-400 focus:ring-0 text-xs" />
+
+                  {/* Rating Selector */}
+                  <div>
+                    <label className="block text-sm mb-1.5 text-gray-700">Rating</label>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className="p-1 focus:outline-none"
+                        >
+                          <Star
+                            size={20}
+                            fill={star <= reviewRating ? '#FBBF24' : 'none'}
+                            stroke={star <= reviewRating ? '#FBBF24' : '#D1D5DB'}
+                            strokeWidth={1.5}
+                          />
+                        </button>
+                      ))}
                     </div>
                   </div>
+
                   {/* Comment */}
                   <div>
-                    <label className="block text-sm mb-1.5 text-gray-700">Share your experience</label>
+                    <label className="block text-sm mb-1.5 text-gray-700">Review</label>
                     <Textarea
-                      placeholder="Share your experience"
+                      rows={4}
                       value={reviewComment}
-                      onChange={(e) => setReviewComment(e.target.value)}
-                      className="min-h-[120px] border-gray-200 focus:border-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:border-gray-400 resize-none"
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewComment(e.target.value)}
+                      placeholder="Write your experience with this product..."
+                      required
                     />
                   </div>
-                  <div className="flex gap-3">
-                    <Button type="submit" className="bg-primary text-primary-foreground px-8">Submit Review</Button>
-                    <Button type="button" variant="outline" onClick={() => setReviewTab('reviews')}>Cancel</Button>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm mb-1.5 text-gray-700">Attach Photos (Optional)</label>
+                    <input
+                      id="review-images"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReviewImages(e.target.files)}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"
+                    />
                   </div>
+
+                  <Button type="submit" className="w-full">
+                    Submit Review
+                  </Button>
                 </form>
               </div>
             )}
           </div>
+
+          {/* Featured/Related Products */}
+          <div className="mt-16">
+            <FeaturedProducts />
+          </div>
         </div>
-      </main>
 
-      <FeaturedProducts category={product.category} currentProductId={product.id} currentProductName={product.name} title="Related Products" />
-
-      {/* Image Modal with Hover Zoom Effect */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-300" onMouseLeave={closeModal}>
-          <div 
-            className="absolute inset-0 bg-black opacity-85 cursor-zoom-out"
-            onClick={closeModal}
-            style={{ animation: 'fadeIn 0.3s ease-out' }}
-          />
-          
-          <div 
-            className="relative w-full h-full flex items-center justify-center bg-black"
-            style={{
-              animation: 'zoomIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}
-          >
-            <style>{`
-              @keyframes zoomIn {
-                from {
-                  transform: scale(0.85);
-                  opacity: 0;
-                }
-                to {
-                  transform: scale(1);
-                  opacity: 1;
-                }
-              }
-              .zoom-image-container {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: hidden;
-              }
-              .zoom-image {
-                transition: transform 0.3s ease-out;
-                max-width: 90vw;
-                max-height: 90vh;
-                cursor: zoom-in;
-              }
-              .zoom-image.zoomed {
-                cursor: zoom-out;
-              }
-            `}</style>
-
-            {/* Close Button */}
-            <button 
-              onClick={closeModal} 
-              className="absolute top-6 right-6 text-white bg-black/50 hover:bg-black/70 rounded-full p-2 transition shadow-md z-10"
-              aria-label="Close"
-              title="Close"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Image Container */}
-            <div className="zoom-image-container">
-              {mainImage ? (
+        {/* Image Zoom Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
+          <DialogContent className="max-w-4xl w-full p-4 bg-transparent border-none shadow-none flex flex-col items-center justify-center">
+            <div className="relative w-full h-[70vh] overflow-hidden flex items-center justify-center">
+              {mainImage && (
                 <div
-                  className={`zoom-image ${zoomLevel > 1 ? 'zoomed' : ''}`}
-                  onClick={() => setZoomLevel(zoomLevel > 1 ? 1 : 2)}
-                  onMouseMove={(e) => {
-                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const xPercent = (x / rect.width) * 100;
-                    const yPercent = (y / rect.height) * 100;
-                    (e.currentTarget as HTMLDivElement).style.transformOrigin = `${xPercent}% ${yPercent}%`;
-                  }}
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className="relative w-full h-full transition-transform duration-200 ease-out flex items-center justify-center"
+                  style={{ transform: `scale(${zoomLevel})` }}
                 >
                   <Image
-                    src={mainImage}
+                    src={cloudinaryOptimize(mainImage, 1600) || mainImage}
                     alt={product.name}
                     fill
-                    sizes="100vw"
                     className="object-contain"
-                    style={{
-                      transform: `scale(${zoomLevel})`,
-                    }}
-                    priority
-                    loading="eager"
                   />
                 </div>
-              ) : (
-                <div className="flex items-center justify-center text-muted-foreground">No image available</div>
               )}
             </div>
 
-            {/* Zoom Hint */}
-            {zoomLevel === 1 && (
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-full">
-                Click to zoom in
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @media (prefers-reduced-motion: no-preference) {
-          * {
-            --animate-in: fade-in;
-          }
-        }
-      `}</style>
-
+            {/* Modal Controls */}
+            <div className="flex items-center gap-4 mt-4 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 1}
+                className="text-white hover:text-gray-300 disabled:opacity-40 p-1"
+                aria-label="Zoom Out"
+              >
+                <Minus className="w-5 h-5" />
+              </button>
+              <span className="text-white text-xs font-mono">{Math.round(zoomLevel * 100)}%</span>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+                className="text-white hover:text-gray-300 disabled:opacity-40 p-1"
+                aria-label="Zoom In"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <div className="w-px h-4 bg-white/20 mx-1" />
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-white text-xs hover:underline"
+              >
+                Close
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </main>
       <Footer />
     </>
   )

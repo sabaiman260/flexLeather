@@ -9,7 +9,7 @@ import { useCart } from '@/components/cart-context'
 import { ShoppingCart } from 'lucide-react'
 import { apiFetch, BackendProduct } from '@/lib/api'
 
-type UIProduct = { id: string; name: string; price: number; discount?: number; image: string; category?: string; stock?: number };
+type UIProduct = { id: string; slug?: string; name: string; price: number; discount?: number; image: string; category?: string; stock?: number };
 
 type FeaturedProductsProps = {
   category?: string
@@ -41,6 +41,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
         const list: BackendProduct[] = res?.data || []
         const mapped: UIProduct[] = list.map(p => ({
           id: p._id,
+          slug: (p as any).slug || undefined,
           name: p.name,
           price: p.price,
           discount: p.discount,
@@ -105,7 +106,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
               : product.price
             const isSoldOut = typeof product.stock === 'number' && product.stock <= 0
             return (
-              <Link key={product.id} href={`/products/${product.id}`} className="group flex flex-col h-full">
+              <Link key={product.id} href={`/products/${product.slug || product.id}`} className="group flex flex-col h-full">
                 <div className="relative overflow-hidden bg-muted aspect-square mb-4 flex items-center justify-center">
                   <Image
                     src={cloudinaryOptimize(product.image, 800) || product.image}
@@ -144,7 +145,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
                     onClick={(e) => {
                       e.preventDefault()
                       if (isSoldOut) return
-                      window.location.href = `/products/${product.id}`
+                      window.location.href = `/products/${product.slug || product.id}`
                     }}
                     className={'w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-auto'}
                     size="sm"

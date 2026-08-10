@@ -118,8 +118,9 @@ export default function SearchBox({ products, onSelect, onQueryChange, className
     persistRecent(val)
     onSelect?.(p)
     // If the selected item looks like a product id (from index) navigate to product page, otherwise search
-    if (p.id && p.id.length === 24) {
-      router.push(`/products/${p.id}`)
+    const dest = (p as any).slug || p.id
+    if (dest) {
+      router.push(`/products/${dest}`)
     } else {
       router.push(`/shop?q=${encodeURIComponent(val)}`)
     }

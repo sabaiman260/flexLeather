@@ -50,6 +50,7 @@ export default function Header() {
       .then(res => {
         const items = (res?.data || []).map((p: any) => ({
           id: p._id,
+          slug: p.slug || undefined,
           name: p.name,
           price: p.price,
           image: Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls[0] : (p.images && p.images[0]) || null,
@@ -226,7 +227,9 @@ export default function Header() {
                 <SearchBox
                   products={productsIndex}
                   onSelect={(p: any) => {
-                    if (p && p.id && p.id.length === 24) router.push(`/products/${p.id}`)
+                    if (!p) return
+                    const dest = p.slug || p.id
+                    if (dest) router.push(`/products/${dest}`)
                   }}
                   onQueryChange={(q: string) => setSearch(q)}
                 />
