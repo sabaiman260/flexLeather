@@ -1,36 +1,3 @@
-// "use client";
-
-// import Image from "next/image";
-
-// export default function ProductSlider() {
-//   const images = [
-//     "/woman.jpg",
-//     "/man.jpg",
-//     "/office.jpg",
-//     "/travel.jpg",
-//     "/gifts.jpg",
-//   ];
-
-//   return (
-//     <div className="w-full overflow-hidden py-10 bg-white">
-//       <div className="relative flex items-center">
-//         {/* Infinite Slide Track */}
-//         <div className="flex animate-slide whitespace-nowrap">
-//           {images.concat(images).map((img, index) => (
-//             <div key={index} className="mx-4 w-52 h-52 rounded-xl overflow-hidden shadow-md">
-//               <img
-//                 src={img}
-//                 alt="Product"
-//                 className="w-full h-full object-cover rounded-xl"
-//               />
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
 
 "use client";
 

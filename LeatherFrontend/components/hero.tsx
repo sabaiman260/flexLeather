@@ -21,7 +21,6 @@ const sliderImages: Slide[] = [
     category: 'men-collection',
     cta: 'Discover',
   },
-  
   {
     image: '/banner2.png',
     heading: 'STYLE THAT ENDURES',
@@ -57,9 +56,8 @@ const sliderImages: Slide[] = [
     heading: 'MODERN LUXURY',
     category: 'limited-edition',
     cta: 'Discover',
-  }
-];
-
+  },
+]
 
 export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState<number>(0)
@@ -67,11 +65,15 @@ export default function Hero() {
   const [assetVersion, setAssetVersion] = useState<string>('')
   const [remoteSlides, setRemoteSlides] = useState<Slide[] | null>(null)
 
-  // Determine which slides to show (remote banners if available, otherwise local)
-  const slides = remoteSlides && remoteSlides.length > 0 ? remoteSlides : sliderImages
+  // Use remote banners if available, otherwise use local banners
+  const slides =
+    remoteSlides && remoteSlides.length > 0
+      ? remoteSlides
+      : sliderImages
 
+  // Auto play
   useEffect(() => {
-    if (!isAutoPlay) return
+    if (!isAutoPlay || slides.length === 0) return
 
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length)
@@ -80,20 +82,22 @@ export default function Hero() {
     return () => clearInterval(interval)
   }, [isAutoPlay, slides.length])
 
-  // Client-only cache buster so replaced images show immediately during development.
+  // Cache buster
   useEffect(() => {
-    // Use a timestamp so browsers refetch assets when component mounts.
     setAssetVersion(String(Date.now()))
   }, [])
 
-  // Fetch banners from backend; fall back silently to local sliderImages
+  // Fetch banners from backend
   useEffect(() => {
     let mounted = true
+
     const load = async () => {
       try {
         const res = await apiFetch('/api/v1/banners')
         const data = res?.data || []
+
         if (!mounted) return
+
         if (Array.isArray(data) && data.length > 0) {
           const mapped: Slide[] = data.map((b: any) => ({
             image: b.imageUrl || '/placeholder.svg',
@@ -101,47 +105,76 @@ export default function Hero() {
             category: b.category || '',
             cta: b.ctaText || 'Shop',
           }))
+
           setRemoteSlides(mapped)
         }
       } catch (e) {
-        // ignore and fall back to local images
-        console.warn('Hero: failed to fetch banners, using fallback', e)
+        console.warn(
+          'Hero: failed to fetch banners, using fallback',
+          e
+        )
       }
     }
+
     load()
+
     return () => {
       mounted = false
     }
   }, [])
 
   const goToSlide = (index: number) => {
-    const idx = slides.length > 0 ? index % slides.length : 0
+    const idx =
+      slides.length > 0 ? index % slides.length : 0
+
     setCurrentSlide(idx)
     setIsAutoPlay(false)
-    setTimeout(() => setIsAutoPlay(true), 3000)
+
+    setTimeout(() => {
+      setIsAutoPlay(true)
+    }, 3000)
   }
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (slides.length > 0 ? (prev + 1) % slides.length : 0))
+    setCurrentSlide((prev) =>
+      slides.length > 0
+        ? (prev + 1) % slides.length
+        : 0
+    )
+
     setIsAutoPlay(false)
-    setTimeout(() => setIsAutoPlay(true), 3000)
+
+    setTimeout(() => {
+      setIsAutoPlay(true)
+    }, 3000)
   }
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (slides.length > 0 ? (prev - 1 + slides.length) % slides.length : 0))
+    setCurrentSlide((prev) =>
+      slides.length > 0
+        ? (prev - 1 + slides.length) % slides.length
+        : 0
+    )
+
     setIsAutoPlay(false)
-    setTimeout(() => setIsAutoPlay(true), 3000)
+
+    setTimeout(() => {
+      setIsAutoPlay(true)
+    }, 3000)
   }
 
-  // Ensure currentSlide is within bounds when slides length changes
+  // Make sure current slide is valid
   useEffect(() => {
-    if (!slides || slides.length === 0) {
+    if (slides.length === 0) {
       setCurrentSlide(0)
       return
     }
+
     setCurrentSlide((prev) => {
       if (prev < 0) return 0
-      if (prev >= slides.length) return prev % slides.length
+      if (prev >= slides.length) {
+        return prev % slides.length
+      }
       return prev
     })
   }, [slides.length])
@@ -149,67 +182,88 @@ export default function Hero() {
   const currentImage = slides[currentSlide] || slides[0]
 
   return (
-      <section className="w-full bg-background">
-        <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[16/6] lg:aspect-[16/6]">
+    <section className="w-full bg-background">
+      <div
+        className="
+          relative
+          w-full
+          overflow-hidden
+          aspect-[2.56/1]
+        "
+      >
         {/* Slider Images */}
         {slides.map((slide: Slide, index: number) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 flex items-center justify-center ${
-              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentSlide
+                ? 'opacity-100'
+                : 'opacity-0'
             }`}
           >
-            {typeof slide.image === 'string' && slide.image.startsWith('/') ? (
-              // Use object-cover so the image covers the aspect-ratio frame smoothly.
+            {typeof slide.image === 'string' &&
+            slide.image.startsWith('/') ? (
               <img
-                src={`${(slide.image || '/placeholder.svg')}${assetVersion ? `?v=${assetVersion}` : ''}`}
+                src={`${slide.image}${
+                  assetVersion
+                    ? `?v=${assetVersion}`
+                    : ''
+                }`}
                 alt={slide.heading}
-                className="object-cover object-center w-full h-full"
-                loading={index === 0 ? 'eager' : 'lazy'}
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                loading={
+                  index === 0 ? 'eager' : 'lazy'
+                }
               />
             ) : (
               <Image
-                src={slide.image || '/placeholder.svg'}
+                src={
+                  slide.image || '/placeholder.svg'
+                }
                 alt={slide.heading}
                 fill
                 className="object-cover object-center"
                 priority={index === 0}
-                loading={index === 0 ? 'eager' : 'lazy'}
               />
             )}
           </div>
         ))}
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
+        {/* Hero Content */}
+        <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
           <div className="text-center animate-fade-up max-w-3xl w-full px-2 sm:px-6">
             <h2 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-widest mb-3 sm:mb-6">
-              {currentImage.heading}
+              {currentImage?.heading}
             </h2>
+
             <Link href="/shop">
               <Button className="btn-smooth bg-white text-neutral-900 hover:bg-gray-100 px-6 py-2 text-sm tracking-wide font-semibold border border-white">
-                {currentImage.cta}
+                {currentImage?.cta}
               </Button>
             </Link>
           </div>
         </div>
 
+        {/* Previous Button */}
         <button
           onClick={prevSlide}
-          className="absolute left-3 sm:left-6 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition"
+          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition"
           aria-label="Previous slide"
         >
           <ChevronLeft size={24} />
         </button>
 
+        {/* Next Button */}
         <button
           onClick={nextSlide}
-          className="absolute right-3 sm:right-6 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition"
+          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition"
           aria-label="Next slide"
         >
           <ChevronRight size={24} />
         </button>
 
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
+        {/* Dots */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
           {slides.map((_, index: number) => (
             <button
               key={index}

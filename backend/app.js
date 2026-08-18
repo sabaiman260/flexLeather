@@ -62,7 +62,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 /* =======================
-   ROUTES
+   ROUTES                RESTFUL API style
 ======================= */
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/products", productRouter);
