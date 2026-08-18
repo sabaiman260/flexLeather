@@ -47,8 +47,10 @@ type Review = {
 
 export default function ProductDetail() {
   const params = useParams()
-  // Route param may be named `slug` (preferred) or an `id` fallback.
-  const productParam = ((params as any)?.slug || (params as any)?.id || '') as string
+  // Frontend product URLs use slug only
+  const slug = (Array.isArray((params as any)?.slug)
+    ? (params as any).slug[0]
+    : (params as any)?.slug || '') as string
   const [product, setProduct] = useState<Product | null>(null)
   const [loadingProduct, setLoadingProduct] = useState<boolean>(true)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -80,11 +82,21 @@ export default function ProductDetail() {
   const [zoomLevel, setZoomLevel] = useState(1)
 
   useEffect(() => {
+    if (!slug) {
+      setLoadingProduct(false)
+      setLoadingInitial(false)
+      return
+    }
     ;(async () => {
       try {
-        const res = await apiFetch(`/api/v1/products/get/${productParam}`)
+        // Fetch product by slug; response product._id is used for all relations
+        const res = await apiFetch(`/api/v1/products/get/${encodeURIComponent(slug)}`)
         const p = res?.data?.product
         const urls: string[] = res?.data?.imageUrls || []
+        if (!p?._id) {
+          setProduct(null)
+          return
+        }
         const mapped: Product = {
           id: p._id,
           name: p.name,
@@ -99,52 +111,55 @@ export default function ProductDetail() {
           ...(typeof p.stock === 'number' ? { stock: p.stock } : {})
         }
         setProduct(mapped)
+
+        // Reviews / orders must use MongoDB _id, not slug
+        const productId = p._id as string
+        try {
+          setLoadingInitial(true)
+          const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productId}?page=1&limit=${limit}`, {
+            method: 'GET',
+            credentials: 'include'
+          })
+          if (resp.ok) {
+            const data = await resp.json().catch(() => ({}))
+            const payload = data?.data || {}
+            setReviews(payload.reviews || [])
+            setTotalReviews(payload.total || 0)
+            setPage(1)
+          }
+        } catch {
+          // silently ignore
+        } finally {
+          setLoadingInitial(false)
+        }
+
+        const token = localStorage.getItem('accessToken')
+        if (token) {
+          try {
+            const res3 = await apiFetch(`/api/v1/orders/eligible-for-review/${productId}`)
+            setEligibleOrders(res3?.data || [])
+          } catch {
+            // Silently fail for protected API calls
+          }
+        }
       } catch {
+        setProduct(null)
       } finally {
         setLoadingProduct(false)
       }
-      try {
-        setLoadingInitial(true)
-        const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productParam}?page=1&limit=${limit}`, {
-          method: 'GET',
-          credentials: 'include'
-        })
-        if (resp.ok) {
-          const data = await resp.json().catch(() => ({}))
-          const payload = data?.data || {}
-          setReviews(payload.reviews || [])
-          setTotalReviews(payload.total || 0)
-          setPage(1)
-        }
-      } catch (err) {
-        // silently ignore
-      } finally {
-        setLoadingInitial(false)
-      }
-
-      // Fetch eligible orders for review - ONLY for logged-in users
-      const token = localStorage.getItem('accessToken')
-      if (token) {
-        try {
-          const res3 = await apiFetch(`/api/v1/orders/eligible-for-review/${productParam}`)
-          setEligibleOrders(res3?.data || [])
-        } catch {
-          // Silently fail for protected API calls
-        }
-      }
     })()
-  }, [productParam, limit])
+  }, [slug, limit])
 
   // Refetch product when admin updates products elsewhere (storage flag)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'products_last_updated') {
+      if (e.key === 'products_last_updated' && slug) {
         ;(async () => {
           try {
-            const res = await apiFetch(`/api/v1/products/get/${productParam}`)
+            const res = await apiFetch(`/api/v1/products/get/${encodeURIComponent(slug)}`)
             const p = res?.data?.product
             const urls: string[] = res?.data?.imageUrls || []
-            if (p) {
+            if (p?._id) {
               const mapped: Product = {
                 id: p._id,
                 name: p.name,
@@ -167,7 +182,7 @@ export default function ProductDetail() {
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [productParam])
+  }, [slug])
 
   // Fire view_item GTM event when product details are available
   useEffect(() => {
@@ -655,7 +670,7 @@ export default function ProductDetail() {
                           const prevPage = page - 1
                           setLoadingMore(true)
                           try {
-                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productParam}?page=${prevPage}&limit=${limit}`, { credentials: 'include' })
+                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${product.id}?page=${prevPage}&limit=${limit}`, { credentials: 'include' })
                             if (resp.ok) {
                               const data = await resp.json().catch(() => ({}))
                               setReviews(data?.data?.reviews || [])
@@ -673,7 +688,7 @@ export default function ProductDetail() {
                           const nextPage = page + 1
                           setLoadingMore(true)
                           try {
-                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${productParam}?page=${nextPage}&limit=${limit}`, { credentials: 'include' })
+                            const resp = await fetch(`${API_BASE_URL}/api/v1/reviews/product/${product.id}?page=${nextPage}&limit=${limit}`, { credentials: 'include' })
                             if (resp.ok) {
                               const data = await resp.json().catch(() => ({}))
                               setReviews(data?.data?.reviews || [])
@@ -706,7 +721,7 @@ export default function ProductDetail() {
                       return
                     }
                     const fd = new FormData()
-                    fd.append('product', productParam)
+                    fd.append('product', product.id)
                     fd.append('orderId', token ? selectedOrderId : 'guest')
                     fd.append('rating', String(reviewRating))
                     if (reviewComment) fd.append('comment', reviewComment)

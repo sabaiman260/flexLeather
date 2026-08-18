@@ -21,7 +21,8 @@ const productRouter = Router();
 productRouter.get("/getAll", getAllProducts);
 productRouter.get("/getAllAdmin", isLoggedIn, isAdmin, getAllProductsAdmin);
 productRouter.get("/category/:categoryId", getProductsByCategoryId); // by ID
-productRouter.get("/get/:id", getProductDetail);
+// Public product detail by slug (frontend URLs use slug; IDs stay for DB relations)
+productRouter.get("/get/:slug", getProductDetail);
 productRouter.get("/search", searchProducts);
 
 // Admin routes

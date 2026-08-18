@@ -262,12 +262,12 @@ const deleteProduct = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Product deleted successfully"));
 });
 
-// Product detail
+// Product detail by slug (frontend public URLs). Keep update/delete/etc. on IDs.
 const getProductDetail = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id).populate(
-    "category",
-    "name slug"
-  );
+  const slug = req.params.slug;
+  if (!slug) throw new ApiError(404, "Product not found");
+
+  const product = await Product.findOne({ slug }).populate("category", "name slug");
   if (!product || !product.isActive) throw new ApiError(404, "Product not found");
 
   const detailKeys = Array.isArray(product.images) ? product.images : [];

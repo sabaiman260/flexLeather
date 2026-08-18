@@ -197,6 +197,7 @@ export function getConnectionStatus() {
 export type BackendProduct = {
   _id: string;
   name: string;
+  slug?: string;
   description?: string;
   price: number;
   discount?: number;
