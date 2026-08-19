@@ -1,8 +1,16 @@
 import { ApiError } from "../utils/api-error.js";
 import { asyncHandler } from "../utils/async-handler.js";
 
+const getZodIssues = (error) => error?.issues || error?.errors || [];
+
 const formatZodErrors = (zodErrors) =>
-    (zodErrors || []).map((err) => ({ field: err.path.join("."), message: err.message }));
+    (zodErrors || [])
+        .map((err) => {
+            const path = Array.isArray(err?.path) ? err.path.join(".") : "";
+            const message = err?.message || "Invalid value";
+            return path ? { field: path, message } : { message };
+        })
+        .filter((e) => e.message);
 
 const validate = (schema) =>
     asyncHandler(async (req, res, next) => {
@@ -11,11 +19,10 @@ const validate = (schema) =>
             if (schema?.safeParse) {
                 const result = schema.safeParse(req.body);
                 if (!result.success) {
-                    // Log full Zod error for debugging when unexpected shape occurs
                     console.error("Zod validation error (body):", result.error);
-                    let formattedErrors = formatZodErrors(result.error.errors);
+                    let formattedErrors = formatZodErrors(getZodIssues(result.error));
                     if (!formattedErrors || formattedErrors.length === 0) {
-                        formattedErrors = [{ message: result.error.message || "Validation failed" }];
+                        formattedErrors = [{ message: "Please check your input and try again." }];
                     }
                     throw new ApiError(400, "Validation failed", formattedErrors);
                 }
@@ -26,27 +33,27 @@ const validate = (schema) =>
                     const r = schema.body.safeParse(req.body);
                     if (!r.success) {
                         console.error("Zod validation error (body):", r.error);
-                        const fe = formatZodErrors(r.error.errors);
+                        const fe = formatZodErrors(getZodIssues(r.error));
                         if (fe.length) allErrors.push(...fe);
-                        else allErrors.push({ message: r.error.message || "Validation failed" });
+                        else allErrors.push({ message: "Please check your input and try again." });
                     }
                 }
                 if (schema?.query) {
                     const r = schema.query.safeParse(req.query);
                     if (!r.success) {
                         console.error("Zod validation error (query):", r.error);
-                        const fe = formatZodErrors(r.error.errors);
+                        const fe = formatZodErrors(getZodIssues(r.error));
                         if (fe.length) allErrors.push(...fe);
-                        else allErrors.push({ message: r.error.message || "Validation failed" });
+                        else allErrors.push({ message: "Please check your input and try again." });
                     }
                 }
                 if (schema?.params) {
                     const r = schema.params.safeParse(req.params);
                     if (!r.success) {
                         console.error("Zod validation error (params):", r.error);
-                        const fe = formatZodErrors(r.error.errors);
+                        const fe = formatZodErrors(getZodIssues(r.error));
                         if (fe.length) allErrors.push(...fe);
-                        else allErrors.push({ message: r.error.message || "Validation failed" });
+                        else allErrors.push({ message: "Please check your input and try again." });
                     }
                 }
 
@@ -58,15 +65,7 @@ const validate = (schema) =>
             next();
         } catch (error) {
             // If we already threw an ApiError, rethrow it
-            if (error.name === "ApiError" || error instanceof ApiError) {
-                throw error;
-            }
-
-            // Log unexpected validation/internal errors and return a 500
-            console.error("Unexpected validation error:", error);
-            throw new ApiError(500, "Unexpected validation error", [
-                { message: error?.message || "Unknown error" },
-            ]);
+            throw error;
         }
     });
 

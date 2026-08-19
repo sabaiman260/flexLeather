@@ -209,4 +209,5 @@ export type BackendProduct = {
   imageUrls?: string[];
   images?: string[];
   isActive?: boolean;
+  madeToOrder?: boolean;
 };

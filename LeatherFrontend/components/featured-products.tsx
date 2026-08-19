@@ -9,7 +9,7 @@ import { useCart } from '@/components/cart-context'
 import { ShoppingCart } from 'lucide-react'
 import { apiFetch, BackendProduct } from '@/lib/api'
 
-type UIProduct = { id: string; slug?: string; name: string; price: number; discount?: number; image: string; category?: string; stock?: number };
+type UIProduct = { id: string; slug?: string; name: string; price: number; discount?: number; image: string; category?: string; stock?: number; madeToOrder?: boolean };
 
 type FeaturedProductsProps = {
   category?: string
@@ -41,13 +41,14 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
         const list: BackendProduct[] = res?.data || []
         const mapped: UIProduct[] = list.map(p => ({
           id: p._id,
-          slug: (p as any).slug || undefined,
+          slug: p.slug || undefined,
           name: p.name,
           price: p.price,
           discount: p.discount,
           image: (p.imageUrls && p.imageUrls[0]) || '/placeholder.jpg',
           stock: typeof p.stock === 'number' ? p.stock : 0,
           category: (typeof p.category === 'object' && p.category?.name) || undefined,
+          madeToOrder: Boolean(p.madeToOrder),
         }))
 
         const others = mapped.filter(p => p.id !== currentProductId)
@@ -114,15 +115,16 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
                     fill
                     className="object-cover transition duration-500 group-hover:scale-105"
                   />
-                  {hasDiscount ? (
+                  {hasDiscount && (
                     <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {product.discount}% OFF
                     </div>
-                  ) : isSoldOut ? (
+                  )}
+                  {!hasDiscount && isSoldOut && (
                     <div className="absolute inset-0 bg-black/30 flex items-start justify-end p-2">
                       <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</div>
                     </div>
-                  ) : null}
+                  )}
                 </div>
                 <div className="flex flex-col flex-grow">
                   <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">

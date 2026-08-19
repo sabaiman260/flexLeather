@@ -14,6 +14,7 @@ import { useCart } from '@/components/cart-context'
 
 type UIProduct = {
   id: string
+  slug?: string
   name: string
   price: number
   image: string
@@ -21,6 +22,7 @@ type UIProduct = {
   brand?: string
   tags?: string[]
   stock?: number
+  madeToOrder?: boolean
 }
 
 export default function SearchPage() {
@@ -39,6 +41,7 @@ export default function SearchPage() {
       .then((res) => {
         const items = (res?.data || []).map((p: any) => ({
           id: p._id,
+          slug: p.slug,
           name: p.name,
           price: p.price,
           image: Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls[0] : (p.images && p.images[0]) || '/placeholder.jpg',
@@ -46,6 +49,7 @@ export default function SearchPage() {
           brand: p.brand || '',
           tags: p.tags || [],
           stock: typeof p.stock === 'number' ? p.stock : 0,
+          madeToOrder: Boolean(p.madeToOrder),
         }))
         if (mounted) setProducts(items)
       })
@@ -96,20 +100,25 @@ export default function SearchPage() {
               {results.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                   {results.map(r => (
-                    <Link key={r.product.id} href={`/products/${r.product.id}`} className="group flex flex-col h-full border rounded overflow-hidden">
+                    <Link key={r.product.id} href={`/products/${r.product.slug || r.product.id}`} className="group flex flex-col h-full border rounded overflow-hidden">
                       <div className="relative overflow-hidden bg-muted aspect-square mb-4 p-0 flex items-center justify-center">
                         <Image src={cloudinaryOptimize(r.product.image, 400) || r.product.image} alt={r.product.name} fill sizes="100vw" className="object-cover transition duration-500 group-hover:scale-105" />
+                        {(!r.product.stock || r.product.stock <= 0) && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</div>
+                          </div>
+                        )}
                       </div>
 
-                      <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">{r.product.name}</h3>
+                      <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition px-2">{r.product.name}</h3>
 
-                      <div className="text-sm mt-2">
+                      <div className="text-sm mt-2 px-2">
                         <p className="font-serif text-lg">PKR {r.product.price?.toLocaleString()}</p>
                       </div>
 
                       <Button
                         size="sm"
-                        className={`w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground`}
+                        className={`w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground m-2`}
                         onClick={e => {
                           e.preventDefault()
                           if (!r.product.stock || r.product.stock <= 0) return

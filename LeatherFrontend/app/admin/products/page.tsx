@@ -17,6 +17,7 @@ type FormState = {
   colors?: string
   specs?: string
   isActive?: boolean
+  madeToOrder?: boolean
   category?: string
   soldOut?: boolean
 }
@@ -44,8 +45,9 @@ export default function AdminProductsPage() {
     colors: '',
     specs: '',
     isActive: true,
-    category: ''
-    , soldOut: false
+    madeToOrder: false,
+    category: '',
+    soldOut: false
   })
   
   const [images, setImages] = useState<File[] | null>(null)
@@ -101,8 +103,9 @@ export default function AdminProductsPage() {
       colors: '',
       specs: '',
       isActive: true,
-      category: ''
-      , soldOut: false
+      madeToOrder: false,
+      category: '',
+      soldOut: false
     })
     setImages(null)
     setEditingId(null)
@@ -127,7 +130,8 @@ export default function AdminProductsPage() {
       sizes: Array.isArray(p.sizes) ? p.sizes.join(',') : '',
       colors: Array.isArray(p.colors) ? p.colors.join(',') : '',
       specs: Array.isArray(p.specs) ? p.specs.join(',') : '',
-      isActive: true,
+      isActive: p.isActive !== false,
+      madeToOrder: Boolean(p.madeToOrder),
       category: catId || '',
       soldOut: (!p.stock || p.stock <= 0)
     })
@@ -162,6 +166,7 @@ export default function AdminProductsPage() {
       if (form.description) fd.append('description', form.description)
       if (form.category) fd.append('category', form.category)
       if (form.isActive !== undefined) fd.append('isActive', String(form.isActive))
+      fd.append('madeToOrder', String(Boolean(form.madeToOrder)))
       if (form.sizes !== undefined) fd.append('sizes', sanitizeArrayString(form.sizes))
       if (form.colors !== undefined) fd.append('colors', sanitizeArrayString(form.colors))
       if (form.specs !== undefined) fd.append('specs', sanitizeArrayString(form.specs))
@@ -269,6 +274,9 @@ export default function AdminProductsPage() {
                       {(!p.stock || p.stock <= 0) && (
                         <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700">SOLD OUT</span>
                       )}
+                      {p.madeToOrder && (
+                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-amber-100 text-amber-800">MADE TO ORDER</span>
+                      )}
                     </div>
                   </td>
                   <td className="p-4 text-right">
@@ -354,6 +362,14 @@ export default function AdminProductsPage() {
                   <option value="true">Active</option>
                   <option value="false">Inactive</option>
                 </select>
+                <label className="inline-flex items-center gap-2 mt-3">
+                  <input
+                    type="checkbox"
+                    checked={!!form.madeToOrder}
+                    onChange={e => setForm({ ...form, madeToOrder: e.target.checked })}
+                  />
+                  <span className="text-xs text-gray-500">Made to Order</span>
+                </label>
               </div>
               
               <div className="md:col-span-2 space-y-1">

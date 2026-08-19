@@ -220,13 +220,16 @@ export default function LoginPage() {
         toast.error('Login failed. Please check your credentials and try again.')
       }
     } catch (err: any) {
-      // Normalize error message for user-friendly toast
-      try {
-        const formatApiError = (await import('@/lib/formatApiError')).default
-        toast.error(formatApiError(err))
-      } catch {
-        const fallback = err?.message || 'Login failed. Please try again.'
-        toast.error(fallback)
+      const msg = String(err?.message || '')
+      const lower = msg.toLowerCase()
+      // Network / server down — keep a clear connection message
+      if (lower.includes('timeout') || lower.includes('backend server') || lower.includes('failed to fetch') || lower.includes('network')) {
+        toast.error('Unable to reach the server. Please try again.')
+      } else if (lower.includes('verify')) {
+        toast.error('Please verify your email before logging in.')
+      } else {
+        // Wrong credentials, validation noise, etc. → single friendly message
+        toast.error('Invalid email or password')
       }
     } finally {
       setLoading(false)

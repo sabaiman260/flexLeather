@@ -30,6 +30,7 @@ type Product = {
   images: string[]
   colors?: string[]
   sizes?: string[]
+  madeToOrder?: boolean
 }
 
 type Review = {
@@ -108,6 +109,7 @@ export default function ProductDetail() {
           images: urls.length ? urls : ['/placeholder.jpg'],
           colors: p.colors || [],
           sizes: p.sizes || [],
+          madeToOrder: Boolean(p.madeToOrder),
           ...(typeof p.stock === 'number' ? { stock: p.stock } : {})
         }
         setProduct(mapped)
@@ -170,7 +172,8 @@ export default function ProductDetail() {
                 specs: p.specs || [],
                 images: urls.length ? urls : ['/placeholder.jpg'],
                 colors: p.colors || [],
-                sizes: p.sizes || []
+                sizes: p.sizes || [],
+                madeToOrder: Boolean(p.madeToOrder)
               }
               setProduct(mapped)
             }
@@ -384,9 +387,16 @@ export default function ProductDetail() {
             {/* Product Details */}
             <div>
               <div className="mb-6">
-                <h1 className="text-3xl md:text-4xl font-serif font-light tracking-wide mb-4">
+                <h1 className="text-3xl md:text-4xl font-serif font-light tracking-wide mb-3">
                   {product.name}
                 </h1>
+                {product.madeToOrder && (
+                  <div className="mb-3">
+                    <span className="inline-block bg-amber-600 text-white text-xs font-bold px-2.5 py-1 rounded-full tracking-wide">
+                      MADE TO ORDER
+                    </span>
+                  </div>
+                )}
                 {product.discount && product.discount > 0 ? (
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-2xl font-serif text-red-600">
@@ -403,27 +413,47 @@ export default function ProductDetail() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <p className="text-2xl font-serif">PKR {product.price.toLocaleString()}</p>
+                    {product['stock'] !== undefined && product['stock'] <= 0 && (
+                      <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</span>
+                    )}
+                  </div>
                 )}
                 {product['stock'] !== undefined && product['stock'] <= 0 && (
                   <p className="text-sm text-red-600 font-medium mt-2">This product is currently sold out.</p>
                 )}
               </div>
 
-              <p className="text-sm leading-relaxed mb-8 opacity-80">
+              <p className="text-sm md:text-[15px] leading-relaxed mb-8 opacity-90">
                 {product.description}
               </p>
-
+ 
               {/* Specifications */}
               <div className="mb-8">
-                <h3 className="text-sm font-light tracking-wide mb-4 uppercase opacity-75">Specifications</h3>
-                <ul className="space-y-2 text-sm opacity-80">
-                  {(product.specs || []).map((spec, i) => (
-                    <li key={i} className="flex items-center">
-                      <span className="w-1 h-1 bg-accent rounded-full mr-2"></span>
-                      {spec}
-                    </li>
-                  ))}
+                <h3 className="text-sm md:text-[15px] font-medium tracking-wide mb-4 uppercase opacity-90">Specifications</h3>
+                <ul className="space-y-2.5 text-sm md:text-[15px] opacity-90">
+                  {(product.specs || []).map((spec, i) => {
+                    const colonIndex = typeof spec === 'string' ? spec.indexOf(':') : -1
+                    const hasLabel = colonIndex > 0
+                    const label = hasLabel ? spec.slice(0, colonIndex).trim() : ''
+                    const value = hasLabel ? spec.slice(colonIndex + 1).trim() : spec
+                    return (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="mt-2 w-1.5 h-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                        <span className="leading-relaxed break-words min-w-0">
+                          {hasLabel ? (
+                            <>
+                              <span className="font-semibold text-foreground">{label}:</span>{' '}
+                              <span>{value}</span>
+                            </>
+                          ) : (
+                            spec
+                          )}
+                        </span>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
 

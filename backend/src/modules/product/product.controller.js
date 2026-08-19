@@ -71,6 +71,7 @@ const createProduct = asyncHandler(async (req, res) => {
     colors,
     specs,
     isActive,
+    madeToOrder,
   } = req.body;
 
   if (!name || !price || !category)
@@ -91,6 +92,10 @@ const createProduct = asyncHandler(async (req, res) => {
   colors = toArray(colors);
   specs = toArray(specs);
   isActive = typeof isActive === "string" ? isActive === "true" : true;
+  madeToOrder =
+    typeof madeToOrder === "string"
+      ? madeToOrder === "true"
+      : Boolean(madeToOrder);
 
   // Upload images to Cloudinary (via S3UploadHelper)
   let imageKeys = [];
@@ -142,6 +147,7 @@ const createProduct = asyncHandler(async (req, res) => {
       specs,
       images: imageKeys,
       isActive,
+      madeToOrder,
     });
   } catch (err) {
     if (err && (err.code === 11000 || err.name === "MongoServerError")) {
@@ -185,6 +191,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     colors,
     specs,
     isActive,
+    madeToOrder,
   } = req.body;
 
   const toNumber = (v) => (v === undefined ? undefined : Number(v));
@@ -206,6 +213,9 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (specs) product.specs = toArray(specs);
   if (isActive !== undefined)
     product.isActive = typeof isActive === "string" ? isActive === "true" : isActive;
+  if (madeToOrder !== undefined)
+    product.madeToOrder =
+      typeof madeToOrder === "string" ? madeToOrder === "true" : Boolean(madeToOrder);
 
   // Upload new images
   try {

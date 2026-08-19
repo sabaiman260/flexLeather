@@ -24,6 +24,7 @@ type UIProduct = {
   colors?: string[]
   sizes?: string[]
   stock?: number
+  madeToOrder?: boolean
 }
 
 export default function ShopPage() {
@@ -62,7 +63,7 @@ export default function ShopPage() {
 
       const mapped: UIProduct[] = list.map(p => ({
         id: p._id,
-        slug: (p as any).slug || undefined,
+        slug: p.slug || undefined,
         name: p.name,
         price: p.price,
         discount: p.discount || 0,
@@ -77,9 +78,9 @@ export default function ShopPage() {
             ? p.category.name.toLowerCase().replace(/\s+/g, '-')
             : undefined,
         colors: p.colors || [],
-        sizes: p.sizes || []
-        ,
-        stock: typeof p.stock === 'number' ? p.stock : 0
+        sizes: p.sizes || [],
+        stock: typeof p.stock === 'number' ? p.stock : 0,
+        madeToOrder: Boolean(p.madeToOrder),
       }))
 
       setProducts(mapped)
@@ -282,15 +283,16 @@ export default function ShopPage() {
                           fill
                           className="object-cover transition duration-500 group-hover:scale-105"
                         />
-                        {p.discount && p.discount > 0 ? (
+                        {p.discount && p.discount > 0 && (
                           <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                             {p.discount}% OFF
                           </div>
-                        ) : (!p.stock || p.stock <= 0) ? (
+                        )}
+                        {(!p.discount || p.discount <= 0) && (!p.stock || p.stock <= 0) && (
                           <div className="absolute inset-0 bg-black/30 flex items-start justify-end p-2">
                             <div className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">SOLD OUT</div>
                           </div>
-                        ) : null}
+                        )}
                       </div>
 
                       <h3 className="text-sm font-light tracking-wide group-hover:text-accent transition">

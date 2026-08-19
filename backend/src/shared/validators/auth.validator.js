@@ -37,9 +37,11 @@ export const loginSchema = z.object({
         .string({ required_error: "Email is required" })
         .email("Invalid email address"),
 
+    // Login: only require a non-empty password so wrong/short passwords
+    // reach auth and return a generic credentials message.
     userPassword: z
         .string({ required_error: "Password is required" })
-        .min(6, "Password must be at least 6 characters"),
+        .min(1, "Password is required"),
 });
 
 export const forgotPasswordSchema = z.object({

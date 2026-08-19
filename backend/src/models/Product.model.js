@@ -16,7 +16,8 @@ const productSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
 
     images: [String],
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    madeToOrder: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

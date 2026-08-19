@@ -260,19 +260,19 @@ const loginUser = asyncHandler(async (req, res) => {
     console.log("[LOGIN] request body", { email, passwordReceived: !!password });
 
     if (!email || !password) {
-        throw new ApiError(400, "Email and password are required");
+        throw new ApiError(400, "Invalid email or password");
     }
 
     const emailRegex = new RegExp("^" + email.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "$", "i");
     const user = await User.findOne({ userEmail: emailRegex });
     console.log("[LOGIN] user found", !!user);
-    if (!user) throw new ApiError(400, "User not found");
+    if (!user) throw new ApiError(401, "Invalid email or password");
 
     const isPasswordCorrect = await user.isPasswordCorrect(password);
     console.log("[LOGIN] password match", isPasswordCorrect);
-    if (!isPasswordCorrect) throw new ApiError(400, "Invalid password");
+    if (!isPasswordCorrect) throw new ApiError(401, "Invalid email or password");
 
-    if (!user.userIsVerified) throw new ApiError(400, "User not verified");
+    if (!user.userIsVerified) throw new ApiError(400, "Please verify your email before logging in");
 
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();

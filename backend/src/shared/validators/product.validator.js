@@ -21,6 +21,10 @@ export const createProductSchema = z.object({
     (val) => (typeof val === "string" ? val === "true" : val),
     z.boolean().optional()
   ),
+  madeToOrder: z.preprocess(
+    (val) => (typeof val === "string" ? val === "true" : val),
+    z.boolean().optional()
+  ),
 });
 
 export const updateProductSchema = z.object({
@@ -45,6 +49,10 @@ export const updateProductSchema = z.object({
     isActive: z.preprocess(
       (val) => (typeof val === "string" ? val === "true" : val),
       z.boolean().optional()
-    )
+    ),
+    madeToOrder: z.preprocess(
+      (val) => (typeof val === "string" ? val === "true" : val),
+      z.boolean().optional()
+    ),
   });
-  
+
