@@ -37,19 +37,20 @@ export default function SearchPage() {
   useEffect(() => {
     let mounted = true
     setLoading(true)
-    apiFetch('/api/v1/products/getAll')
+    // Fetch lightweight product data for search (limit to 100 products)
+    apiFetch('/api/v1/products/lite?limit=100')
       .then((res) => {
         const items = (res?.data || []).map((p: any) => ({
-          id: p._id,
+          id: p.id,
           slug: p.slug,
           name: p.name,
           price: p.price,
-          image: Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls[0] : (p.images && p.images[0]) || '/placeholder.jpg',
-          category: p.category?.name || (typeof p.category === 'string' ? p.category : ''),
-          brand: p.brand || '',
-          tags: p.tags || [],
-          stock: typeof p.stock === 'number' ? p.stock : 0,
-          madeToOrder: Boolean(p.madeToOrder),
+          image: '/placeholder.jpg', // Lite endpoint doesn't include images
+          category: p.category || '',
+          brand: '',
+          tags: [],
+          stock: 999, // Assume in stock for lite search
+          madeToOrder: false,
         }))
         if (mounted) setProducts(items)
       })

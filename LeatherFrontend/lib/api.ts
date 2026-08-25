@@ -211,3 +211,30 @@ export type BackendProduct = {
   isActive?: boolean;
   madeToOrder?: boolean;
 };
+
+// Server-side fetch helper for Next.js Server Components
+// Only use this in Server Components (app router without 'use client')
+export async function serverApiFetch(path: string, options: RequestInit = {}) {
+  const url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+  
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    })
+
+    if (!res.ok) {
+      console.error(`Server fetch error [${res.status}] ${path}`)
+      return null
+    }
+
+    return await res.json()
+  } catch (error) {
+    console.error(`Server fetch failed for ${path}:`, error)
+    return null
+  }
+}

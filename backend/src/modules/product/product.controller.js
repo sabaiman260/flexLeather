@@ -5,12 +5,21 @@ import { ApiError } from "../../core/utils/api-error.js";
 import { ApiResponse } from "../../core/utils/api-response.js";
 import S3UploadHelper from "../../shared/helpers/s3Upload.js";
 
-// Get all products
-const getAllProducts = asyncHandler(async (_req, res) => {
-  const products = await Product.find({ isActive: true }).populate(
-    "category",
-    "name slug"
-  );
+// Get all products with pagination
+const getAllProducts = asyncHandler(async (req, res) => {
+  // Support pagination via query params: ?page=1&limit=12
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 1000; // Default to all for backwards compatibility
+  const skip = (page - 1) * limit;
+
+  // Get total count for pagination metadata
+  const totalProducts = await Product.countDocuments({ isActive: true });
+  
+  const products = await Product.find({ isActive: true })
+    .populate("category", "name slug")
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 }); // Newest first
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
@@ -24,7 +33,16 @@ const getAllProducts = asyncHandler(async (_req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, productsWithUrls, "All products fetched"));
+    .json(new ApiResponse(200, {
+      products: productsWithUrls,
+      pagination: {
+        page,
+        limit,
+        totalProducts,
+        totalPages: Math.ceil(totalProducts / limit),
+        hasMore: skip + products.length < totalProducts
+      }
+    }, "Products fetched successfully"));
 });
 
 // Get products by category ID
@@ -334,6 +352,32 @@ const getAllProductsAdmin = asyncHandler(async (_req, res) => {
     .json(new ApiResponse(200, productsWithUrls, "All products fetched (admin)"));
 });
 
+// Lightweight endpoint for search autocomplete (only returns id, name, slug, category, price)
+const getProductsLite = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 100; // Default to 100 for autocomplete
+  
+  const products = await Product.find({ isActive: true })
+    .select('_id name slug price category')
+    .populate("category", "name slug")
+    .limit(limit)
+    .sort({ createdAt: -1 })
+    .lean(); // Use lean() for faster queries when we don't need Mongoose document features
+
+  // Return minimal data without signed URLs for autocomplete
+  const lightProducts = products.map(p => ({
+    id: p._id,
+    name: p.name,
+    slug: p.slug,
+    price: p.price,
+    category: p.category?.name || '',
+    categorySlug: p.category?.slug || ''
+  }));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, lightProducts, "Lite products fetched"));
+});
+
 export {
   getAllProducts,
   getAllProductsAdmin,
@@ -343,4 +387,5 @@ export {
   deleteProduct,
   getProductDetail,
   searchProducts,
+  getProductsLite,
 };

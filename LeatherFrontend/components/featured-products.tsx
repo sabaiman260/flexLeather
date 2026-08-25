@@ -37,8 +37,10 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
     if (!isMounted) return
     ;(async () => {
       try {
-        const res = await apiFetch('/api/v1/products/getAll')
-        const list: BackendProduct[] = res?.data || []
+        // Fetch only 8 products for featured section with pagination
+        const res = await apiFetch('/api/v1/products/getAll?page=1&limit=8')
+        // Handle new response format with pagination wrapper
+        const list: BackendProduct[] = res?.data?.products || res?.data || []
         const mapped: UIProduct[] = list.map(p => ({
           id: p._id,
           slug: p.slug || undefined,
@@ -100,7 +102,7 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
         </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-          {products.map((product) => {
+          {products.map((product, idx) => {
             const hasDiscount = product.discount && product.discount > 0
             const discountedPrice = hasDiscount
               ? Math.round(product.price * (1 - product.discount! / 100))
@@ -114,6 +116,8 @@ export default function FeaturedProducts({ category, currentProductId, currentPr
                     alt={product.name}
                     fill
                     className="object-cover transition duration-500 group-hover:scale-105"
+                    priority={idx < 4}
+                    loading={idx < 4 ? 'eager' : 'lazy'}
                   />
                   {hasDiscount && (
                     <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">

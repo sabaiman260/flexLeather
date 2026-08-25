@@ -45,19 +45,19 @@ export default function Header() {
 
   useEffect(() => {
     let mounted = true
-    // fetch a lightweight product list for client search/autocomplete
-    apiFetch('/api/v1/products/getAll')
+    // Fetch lightweight product list for client search/autocomplete (only id, name, slug, price, category)
+    apiFetch('/api/v1/products/lite?limit=100')
       .then(res => {
         const items = (res?.data || []).map((p: any) => ({
-          id: p._id,
+          id: p.id,
           slug: p.slug || undefined,
           name: p.name,
           price: p.price,
-          image: Array.isArray(p.imageUrls) && p.imageUrls.length ? p.imageUrls[0] : (p.images && p.images[0]) || null,
-          category: p.category?.name || p.category || '',
-          brand: p.brand || '',
-          description: p.description || '',
-          tags: p.tags || [],
+          image: null, // No images needed for autocomplete
+          category: p.category || '',
+          brand: '',
+          description: '',
+          tags: [],
         }))
         if (mounted) setProductsIndex(items)
       })

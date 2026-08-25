@@ -22,6 +22,11 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for performance optimization
+productSchema.index({ isActive: 1 });
+productSchema.index({ isActive: 1, category: 1 });
+productSchema.index({ slug: 1 });
+
 productSchema.pre("save", function (next) {
   if (!this.slug && this.name) {
     this.slug = this.name
