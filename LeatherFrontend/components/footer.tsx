@@ -23,7 +23,7 @@ export default function Footer() {
       <div className="container-max md:px-6 py-16">
 
         {/* Footer Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
 
           {/* Brand */}
           <div>
@@ -73,14 +73,6 @@ export default function Footer() {
             </nav>
           </div>
 
-          {/* Payment column (moved up into grid) */}
-          {/* <div>
-            <h4 className="text-sm font-light tracking-wide mb-4">
-              Payment
-            </h4>
-            <PaymentBadges />
-          </div> */}
-
           {/* Contact */}
           <div>
             <h4 className="text-sm font-light tracking-wide mb-4">
@@ -95,18 +87,48 @@ export default function Footer() {
                 <Mail className="w-4 h-4" />
                 <span>info@theflexleather.com</span>
               </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5" />
-                <span>
-                  Plot # 3 Climax  Garden<br />
-                  Near Allena Hotel<br />
-                  GT Road Gujranwala, Pakistan
-                </span>
+              <div className="flex items-start gap-2 mt-4">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium opacity-100 mb-1">Corporate Office:</p>
+                  <p>Plot # 3 Climax Garden Near Allena Hotel GT Road<br />Gujranwala Pakistan</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Payment column (moved up into grid) */}
+          {/* <div>
+            <h4 className="text-sm font-light tracking-wide mb-4">
+              Payment
+            </h4>
+            <PaymentBadges />
+          </div> */}
+
+          {/* Locations */}
+          <div>
+            <h4 className="text-sm font-light tracking-wide mb-4">
+              Locations
+            </h4>
+            <div className="space-y-4 text-sm font-light opacity-80">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium opacity-100 mb-1">Head Office:</p>
+                  <p>House # 230 Block-C Ghulshan Ravi<br />Lahore Pakistan</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium opacity-100 mb-1">Production Office:</p>
+                  <p>Rana Market Railway Road Sillanwali<br />Sargodha Pakistan</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment */}
           <div>
             <h4 className="text-sm font-light tracking-wide mb-4">
               Payment
@@ -116,7 +138,7 @@ export default function Footer() {
 
         </div>
 
-        {/* Newsletter */}
+        {/* Newsletter Section */}
         <div className="border-t border-white/20 pt-12 mb-12">
           <h3 className="text-sm font-light tracking-wide mb-4 opacity-80">
             Subscribe to get latest updates and exclusive offers
