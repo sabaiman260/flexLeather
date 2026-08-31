@@ -194,6 +194,15 @@ export function getConnectionStatus() {
   }
 }
 
+export type CategoryItem = {
+  _id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  parentCategory?: { _id: string; name?: string; slug?: string } | string | null;
+  isActive?: boolean;
+};
+
 export type BackendProduct = {
   _id: string;
   name: string;
@@ -205,7 +214,7 @@ export type BackendProduct = {
   sizes?: string[];
   colors?: string[];
   specs?: string[];
-  category?: { _id: string; name?: string; type?: string; slug?: string } | string;
+  category?: { _id: string; name?: string; type?: string; slug?: string; parentCategory?: { _id: string; name?: string; slug?: string } | string | null } | string;
   imageUrls?: string[];
   images?: string[];
   isActive?: boolean;

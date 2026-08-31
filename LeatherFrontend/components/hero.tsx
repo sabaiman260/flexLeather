@@ -182,7 +182,7 @@ export default function Hero() {
   const currentImage = slides[currentSlide] || slides[0]
 
   return (
-    <section className="w-full bg-background">
+    <section className="w-full bg-[#2E1B19] mt-0 p-0 border-0">
       <div
         className="
           relative

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { cloudinaryOptimize } from '@/lib/cloudinary'
-import { apiFetch, API_BASE_URL, BackendProduct } from '@/lib/api'
+import { apiFetch, API_BASE_URL, BackendProduct, CategoryItem } from '@/lib/api'
 import { X, Upload, Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -22,10 +22,8 @@ type FormState = {
   soldOut?: boolean
 }
 
-const FIXED_CATEGORIES = ['MEN', 'WOMEN', 'KIDS', 'OFFICE', 'GIFT IDEAS']
-
 export default function AdminProductsPage() {
-  const [categories, setCategories] = useState<{ _id: string; name: string }[]>([])
+  const [categories, setCategories] = useState<CategoryItem[]>([])
   const [products, setProducts] = useState<BackendProduct[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -73,8 +71,8 @@ export default function AdminProductsPage() {
 
   const loadCategories = async () => {
     try {
-      const res = await apiFetch('/api/v1/categories')
-      setCategories(res?.data?.filter((c: any) => FIXED_CATEGORIES.includes(c.name.toUpperCase())) || [])
+      const res = await apiFetch('/api/v1/categories?includeInactive=true')
+      setCategories(res?.data || [])
     } catch (e) {
       console.error(e)
     }
@@ -320,9 +318,25 @@ export default function AdminProductsPage() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium uppercase text-gray-500">Category</label>
-                <select className="w-full border p-2 rounded focus:border-black outline-none" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                <select className="w-full border p-2 rounded focus:border-black outline-none bg-white" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
                   <option value="">Select Category</option>
-                  {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                  {/* Group Main Categories & Subcategories */}
+                  {categories.filter(c => !c.parentCategory).map(mainCat => {
+                    const subs = categories.filter(sub => {
+                      const pId = typeof sub.parentCategory === 'object' ? sub.parentCategory?._id : sub.parentCategory
+                      return String(pId) === String(mainCat._id)
+                    })
+                    return (
+                      <optgroup key={mainCat._id} label={mainCat.name}>
+                        <option value={mainCat._id}>{mainCat.name} (Main Category)</option>
+                        {subs.map(sub => (
+                          <option key={sub._id} value={sub._id}>
+                            &nbsp;&nbsp;↳ {sub.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
                 </select>
               </div>
               <div className="space-y-1">

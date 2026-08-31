@@ -21,14 +21,14 @@ const categories = [
     link: '/shop?category=gift-ideas'
   },
   {
-    name: 'OFFICE',
+    name: 'TRAVEL',
     image: '/travel.jpg',
-    link: '/shop?category=office'
+    link: '/shop?category=travel'
   },
   {
-    name: 'KIDS',
+    name: 'OFFICE',
     image: '/office.jpg',
-    link: '/shop?category=kids'
+    link: '/shop?category=office'
   }
 ]
 

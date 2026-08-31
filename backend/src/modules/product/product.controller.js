@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { asyncHandler } from "../../core/utils/async-handler.js";
 import Product from "../../models/Product.model.js";
 import Category from "../../models/Category.model.js";
@@ -12,11 +13,86 @@ const getAllProducts = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 1000; // Default to all for backwards compatibility
   const skip = (page - 1) * limit;
 
+  const { category, subcategory, minPrice, maxPrice, search, q } = req.query;
+  const filter = { isActive: true };
+
+  // Price filter
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    filter.price = {};
+    if (minPrice !== undefined && !isNaN(Number(minPrice))) {
+      filter.price.$gte = Number(minPrice);
+    }
+    if (maxPrice !== undefined && !isNaN(Number(maxPrice))) {
+      filter.price.$lte = Number(maxPrice);
+    }
+  }
+
+  // Search filter
+  const searchTerm = search || q;
+  if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim()) {
+    filter.name = { $regex: searchTerm.trim(), $options: "i" };
+  }
+
+  // Category / Subcategory filter
+  if (subcategory) {
+    let subCat = null;
+    if (category) {
+      const mainCat = await Category.findOne({
+        $or: [
+          { slug: category },
+          { name: new RegExp(`^${category}$`, 'i') }
+        ]
+      });
+      if (mainCat) {
+        subCat = await Category.findOne({
+          parentCategory: mainCat._id,
+          $or: [
+            { slug: subcategory },
+            { slug: `${category}-${subcategory}` },
+            { name: new RegExp(`^${subcategory}$`, 'i') }
+          ]
+        });
+      }
+    }
+    if (!subCat) {
+      subCat = await Category.findOne({
+        $or: [
+          { slug: subcategory },
+          { slug: `${category}-${subcategory}` },
+          { name: new RegExp(`^${subcategory}$`, 'i') }
+        ]
+      });
+    }
+    if (subCat) {
+      filter.category = subCat._id;
+    } else {
+      filter.category = new mongoose.Types.ObjectId();
+    }
+  } else if (category) {
+    const mainCat = await Category.findOne({
+      $or: [
+        { slug: category },
+        { name: new RegExp(`^${category}$`, 'i') }
+      ]
+    });
+    if (mainCat) {
+      const childCategories = await Category.find({ parentCategory: mainCat._id, isActive: true });
+      const catIds = [mainCat._id, ...childCategories.map(c => c._id)];
+      filter.category = { $in: catIds };
+    } else {
+      filter.category = new mongoose.Types.ObjectId();
+    }
+  }
+
   // Get total count for pagination metadata
-  const totalProducts = await Product.countDocuments({ isActive: true });
+  const totalProducts = await Product.countDocuments(filter);
   
-  const products = await Product.find({ isActive: true })
-    .populate("category", "name slug")
+  const products = await Product.find(filter)
+    .populate({
+      path: "category",
+      select: "name slug parentCategory",
+      populate: { path: "parentCategory", select: "name slug" }
+    })
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 }); // Newest first
@@ -51,16 +127,21 @@ const getProductsByCategoryId = asyncHandler(async (req, res) => {
   if (!categoryId) throw new ApiError(400, "Category is required");
 
   let category = await Category.findOne({ slug: categoryId });
-  if (!category) {
+  if (!category && mongoose.Types.ObjectId.isValid(categoryId)) {
     category = await Category.findById(categoryId);
   }
   if (!category) throw new ApiError(404, "Category not found");
 
-  // Fetch products by category _id
-  const products = await Product.find({ category: category._id, isActive: true }).populate(
-    "category",
-    "name slug"
-  );
+  // Find all subcategories belonging to this category as well
+  const subcategories = await Category.find({ parentCategory: category._id, isActive: true });
+  const categoryIds = [category._id, ...subcategories.map(s => s._id)];
+
+  // Fetch products by category _id (or any of its subcategories)
+  const products = await Product.find({ category: { $in: categoryIds }, isActive: true }).populate({
+    path: "category",
+    select: "name slug parentCategory",
+    populate: { path: "parentCategory", select: "name slug" }
+  });
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
@@ -295,7 +376,11 @@ const getProductDetail = asyncHandler(async (req, res) => {
   const slug = req.params.slug;
   if (!slug) throw new ApiError(404, "Product not found");
 
-  const product = await Product.findOne({ slug }).populate("category", "name slug");
+  const product = await Product.findOne({ slug }).populate({
+    path: "category",
+    select: "name slug parentCategory",
+    populate: { path: "parentCategory", select: "name slug" }
+  });
   if (!product || !product.isActive) throw new ApiError(404, "Product not found");
 
   const detailKeys = Array.isArray(product.images) ? product.images : [];
@@ -316,7 +401,11 @@ const searchProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({
     name: { $regex: name, $options: "i" },
     isActive: true,
-  }).populate("category", "name slug");
+  }).populate({
+    path: "category",
+    select: "name slug parentCategory",
+    populate: { path: "parentCategory", select: "name slug" }
+  });
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
@@ -335,7 +424,11 @@ const searchProducts = asyncHandler(async (req, res) => {
 
 // Admin: get ALL products including inactive
 const getAllProductsAdmin = asyncHandler(async (_req, res) => {
-  const products = await Product.find({}).populate("category", "name slug");
+  const products = await Product.find({}).populate({
+    path: "category",
+    select: "name slug parentCategory",
+    populate: { path: "parentCategory", select: "name slug" }
+  });
 
   const productsWithUrls = await Promise.all(
     products.map(async (p) => {
@@ -358,7 +451,11 @@ const getProductsLite = asyncHandler(async (req, res) => {
   
   const products = await Product.find({ isActive: true })
     .select('_id name slug price category')
-    .populate("category", "name slug")
+    .populate({
+      path: "category",
+      select: "name slug parentCategory",
+      populate: { path: "parentCategory", select: "name slug" }
+    })
     .limit(limit)
     .sort({ createdAt: -1 })
     .lean(); // Use lean() for faster queries when we don't need Mongoose document features
@@ -370,7 +467,8 @@ const getProductsLite = asyncHandler(async (req, res) => {
     slug: p.slug,
     price: p.price,
     category: p.category?.name || '',
-    categorySlug: p.category?.slug || ''
+    categorySlug: p.category?.slug || '',
+    parentCategorySlug: p.category?.parentCategory?.slug || ''
   }));
 
   return res

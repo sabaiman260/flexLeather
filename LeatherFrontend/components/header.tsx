@@ -339,9 +339,15 @@ export default function Header() {
 
       {/* Login Modal removed — header now links to /login page */}
 
-      {/* Spacer so content starts below fixed header (match header height) */}
-      <div className="md:hidden h-[60px] sm:h-[64px]" />
-      <div className="hidden md:block h-[88px]" />
+      {/* Spacer so content starts below fixed header (accounts for AnnouncementBar + Header height) */}
+      <div
+        className="md:hidden w-full"
+        style={{ height: 'calc(64px + var(--announcement-height, 0px))' }}
+      />
+      <div
+        className="hidden md:block w-full"
+        style={{ height: 'calc(88px + var(--announcement-height, 0px))' }}
+      />
 
       {/* WhatsApp Floating Widget: icon + message pill (no form) */}
       <div className="fixed bottom-4 right-4 z-50">

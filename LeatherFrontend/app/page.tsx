@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ShoppingCart, Menu, X, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Header from '@/components/header'
+import CategoriesNavBar from '@/components/CategoriesNavBar'
 import Hero from '@/components/hero'
 import Categories from '@/components/categories'
 import AnnouncementBar from '@/components/AnnouncementBar'
@@ -13,9 +14,9 @@ import Footer from '@/components/footer'
 export default function Home() {
   return (
     <main>
-       <AnnouncementBar />
+      <AnnouncementBar />
       <Header />
-      {/* <Categories /> */}
+      <CategoriesNavBar />
       <Hero />
       <FeaturedProducts />
       {/* <ProductSlider /> */}
